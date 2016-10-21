@@ -1,0 +1,8 @@
+require 'bundler/setup'
+Bundler.setup
+
+require 'jit_preloader'
+require 'rspec/core'
+
+RSpec.configure do |config|
+end
