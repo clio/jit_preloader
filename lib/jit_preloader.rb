@@ -13,5 +13,17 @@ require 'jit_preloader/active_record/associations/preloader/singular_association
 require 'jit_preloader/preloader'
 
 module JitPreloader
-  # Your code goes here...
+
+  def self.globally_enabled=(value)
+    @enabled = value
+  end
+
+  def self.globally_enabled?
+    if @enabled && @enabled.responds_to?(:call)
+      @enabled.call
+    else
+      @enabled
+    end
+  end
+
 end

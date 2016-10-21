@@ -1,18 +1,6 @@
 module JitPreloader
   class Preloader < ActiveRecord::Associations::Preloader
 
-    def self.globally_enabled=(value)
-      @enabled = value
-    end
-
-    def self.globally_enabled?
-      if @enabled && @enabled.responds_to?(:call)
-        @enabled.call
-      else
-        @enabled
-      end
-    end
-
     attr_accessor :records
 
     def self.attach(records)
