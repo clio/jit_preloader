@@ -1,6 +1,6 @@
 class Contact < ActiveRecord::Base
   has_many :addresses
-  has_many :email_addresses 
+  has_one :email_address
 end
 
 class Address < ActiveRecord::Base

@@ -1,5 +1,6 @@
 require 'active_support/concern'
 require 'active_support/core_ext/module/delegation'
+require 'active_support/notifications'
 require 'active_record'
 
 require "jit_preloader/version"

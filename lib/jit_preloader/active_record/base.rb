@@ -4,6 +4,7 @@ module JitPreloadExtension
 
   included do
     attr_accessor :jit_preloader
+    attr_accessor :jit_n_plus_one_tracking
   end
 
   class_methods do

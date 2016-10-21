@@ -4,12 +4,24 @@ Bundler.setup
 require 'jit_preloader'
 require 'support/database'
 require 'support/models'
+require 'byebug'
+require 'database_cleaner'
+
+DatabaseCleaner.strategy = :transaction
 
 RSpec.configure do |config|
   config.before(:suite) do
     Database.connect!
     Database.build!
   end
+  config.before do
+    DatabaseCleaner.start
+  end
+
+  config.after do
+    DatabaseCleaner.clean
+  end
+
   # rspec-expectations config goes here. You can use an alternate
   # assertion/expectation library such as wrong or the stdlib/minitest
   # assertions if you prefer.
