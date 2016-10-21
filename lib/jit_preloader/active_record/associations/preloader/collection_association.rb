@@ -2,8 +2,8 @@ class ActiveRecord::Associations::Preloader::CollectionAssociation
   private
   # Monkey patch
   # Old method looked like below
-  # Changes here is simply the fact that we remove records that are already
-  # part of the target
+  # Changes here are that we remove records that are already
+  # part of the target and we attach all of the records into a new jit preloader
   # def preload(preloader)
   #   associated_records_by_owner(preloader).each do |owner, records|
   #     association = owner.association(reflection.name)
@@ -15,6 +15,7 @@ class ActiveRecord::Associations::Preloader::CollectionAssociation
 
   def preload(preloader)
     return unless reflection.scope.nil? || reflection.scope.arity == 0
+    all_records = []
     associated_records_by_owner(preloader).each do |owner, records|
       association = owner.association(reflection.name)
       association.loaded!
@@ -25,6 +26,9 @@ class ActiveRecord::Associations::Preloader::CollectionAssociation
 
       association.target.concat(new_records)
       new_records.each { |record| association.set_inverse_instance(record) }
+
+      all_records.concat(records) if owner.jit_preloader || JitPreloader.globally_enabled?
     end
+    JitPreloader::Preloader.attach(all_records) if all_records.any?
   end
 end
