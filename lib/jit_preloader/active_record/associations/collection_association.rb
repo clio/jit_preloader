@@ -3,12 +3,14 @@ class ActiveRecord::Associations::CollectionAssociation
   def load_target_with_jit
     if !loaded? && owner.persisted? && owner.jit_preloader
       owner.jit_preloader.jit_preload(reflection.name)
+      jit_loaded = true
     end
-    was_loaded = loaded?    
+
+    was_loaded = loaded?
 
     load_target_without_jit.tap do |records|
-      records.each{ |record| record.jit_n_plus_one_tracking = true }
-      if !was_loaded && owner.persisted? && owner.jit_n_plus_one_tracking && loaded?
+      records.each{ |record| record.jit_n_plus_one_tracking = true } if jit_loaded || !was_loaded
+      if !was_loaded && loaded? && owner.persisted? && owner.jit_n_plus_one_tracking
         ActiveSupport::Notifications.publish("n_plus_one_query", 
                                              source: owner, association: reflection.name)
       end

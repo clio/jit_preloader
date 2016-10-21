@@ -52,9 +52,29 @@ RSpec.describe JitPreloader::Preloader do
         expect(source_map).to eql({})
       end
     end
+
+    context "when we perform aggregate functions on the data" do
+      it "generates N+1 query notifications for each one" do
+        ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
+          Contact.all.each{|c| c.addresses.count; c.addresses.sum(:id) }
+        end
+        contact_queries = [contact1,contact2, contact3].product([["addresses.count", "addresses.sum"]])
+        expect(source_map).to eql(Hash[contact_queries])
+      end      
+    end
   end
 
   context "when the preloader is not globally enabled" do
+    context "when we perform aggregate functions on the data" do
+      it "generates N+1 query notifications for each one" do
+        ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
+          Contact.all.each{|c| c.addresses.count; c.addresses.sum(:id) }
+        end
+        contact_queries = [contact1,contact2, contact3].product([["addresses.count", "addresses.sum"]])
+        expect(source_map).to eql(Hash[contact_queries])
+      end      
+    end
+
     context "when explicitly finding a contact" do
       it "generates N+1 query notifications for the country" do
         ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
@@ -120,5 +140,15 @@ RSpec.describe JitPreloader::Preloader do
       end
     end
   end
+
+  xit "it doesn't wipe out partially loaded collection" do
+  end
+
+  xit "it doesn't wipe out loaded singlular associations" do
+  end
+
+  xit "chained singular items don't trigger N+1" do
+  end
+
 
 end
