@@ -38,36 +38,82 @@ RSpec.describe JitPreloader::Preloader do
     ->(event, data){ source_map[data[:source]] << data[:association] }
   end
 
-  context "when the preloader is not globally enabled" do    
-    context "when grabbing the email address and address's country of the first contact" do
-      it "doesn't generate an N+1 query notification" do
+  context "when the preloader is globally enabled" do
+    around do |example|
+      JitPreloader.globally_enabled = true
+      example.run
+      JitPreloader.globally_enabled = false
+    end
+    context "when grabbing all of the address'es contries and email addresses" do
+      it "doesn't generate an N+1 query ntoification" do
         ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
-          Contact.first.tap{|c| c.addresses.collect(&:country); c.email_address }
+          Contact.all.collect{|c| c.addresses.collect(&:country); c.email_address }
         end
         expect(source_map).to eql({})
       end
     end
+  end
+
+  context "when the preloader is not globally enabled" do
+    context "when explicitly finding a contact" do
+      it "generates N+1 query notifications for the country" do
+        ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
+          Contact.find(contact1.id).tap{|c| c.addresses.collect(&:country); c.email_address }
+        end
+        address_queries = Address.where(contact_id: 1).product([[:country]])
+        expect(source_map).to eql(Hash[address_queries])
+      end
+    end
+
+    context "when explicitly finding multiple contacts" do
+      it "generates N+1 query notifications for the country" do
+        ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
+          Contact.find(contact1.id, contact2.id).each{|c| c.addresses.collect(&:country); c.email_address }
+        end
+        contact_queries = [contact1,contact2].product([[:addresses, :email_address]])
+        address_queries = Address.where(contact_id: contact1.id).product([[:country]])
+
+        expect(source_map).to eql(Hash[address_queries.concat(contact_queries)])
+      end
+    end
+
+    context "when grabbing the email address and address's country of the first contact" do
+      it "generates N+1 query notifications for the country" do
+        ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
+          Contact.first.tap{|c| c.addresses.collect(&:country); c.email_address }
+        end
+
+        address_queries = Address.where(contact_id: contact1.id).product([[:country]])
+
+        expect(source_map).to eql(Hash[address_queries])
+      end
+    end
+
     context "when grabbing all of the address'es contries and email addresses" do
       it "generates an N+1 query for each association on the contacts" do
         ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
-          Contact.all.collect{|c| c.addresses.collect(&:country); c.email_address }
+          Contact.all.each{|c| c.addresses.collect(&:country); c.email_address }
         end
-        expect(source_map).to eql(Hash[[contact1,contact2,contact3].product([[:addresses, :email_address]])])
+        contact_queries = [contact1,contact2,contact3].product([[:addresses, :email_address]])
+        address_queries = Address.all.product([[:country]])
+        expect(source_map).to eql(Hash[address_queries.concat(contact_queries)])
       end
 
       context "and we use regular preload for addresses" do
         it "generates an N+1 query for only the email addresses on the contacts" do
           ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
-            Contact.preload(:addresses).collect{|c| c.addresses.collect(&:country); c.email_address }
+            Contact.preload(:addresses).each{|c| c.addresses.collect(&:country); c.email_address }
           end
-          expect(source_map).to eql(Hash[Address.all.product([[:country]]).concat(Contact.all.product([[:email_address]]))])
+          contact_queries = [contact1,contact2,contact3].product([[:email_address]])
+          address_queries = Address.all.product([[:country]])
+          expect(source_map).to eql(Hash[address_queries.concat(contact_queries)])
         end        
       end
 
       context "and we use jit preload" do
         it "generates no n+1 queries" do
           ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
-            Contact.jit_preload.collect{|c| c.addresses.collect(&:country); c.email_address }
+            Contact.jit_preload.each{|c| c.addresses.collect(&:country); c.email_address }
           end
           expect(source_map).to eql({})
         end

@@ -7,6 +7,7 @@ class ActiveRecord::Associations::CollectionAssociation
     was_loaded = loaded?    
 
     load_target_without_jit.tap do |records|
+      records.each{ |record| record.jit_n_plus_one_tracking = true }
       if !was_loaded && owner.persisted? && owner.jit_n_plus_one_tracking && loaded?
         ActiveSupport::Notifications.publish("n_plus_one_query", 
                                              source: owner, association: reflection.name)

@@ -20,7 +20,7 @@ module JitPreloader
   end
 
   def self.globally_enabled?
-    if @enabled && @enabled.responds_to?(:call)
+    if @enabled && @enabled.respond_to?(:call)
       @enabled.call
     else
       @enabled
