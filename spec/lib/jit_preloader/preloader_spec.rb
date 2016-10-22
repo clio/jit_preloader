@@ -141,14 +141,4 @@ RSpec.describe JitPreloader::Preloader do
     end
   end
 
-  xit "it doesn't wipe out partially loaded collection" do
-  end
-
-  xit "it doesn't wipe out loaded singlular associations" do
-  end
-
-  xit "chained singular items don't trigger N+1" do
-  end
-
-
 end
