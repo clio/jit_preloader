@@ -1,9 +1,10 @@
 class ActiveRecord::Associations::Preloader::SingularAssociation
   private
-  # Monkey patch
-  # Old method looked like below
-  # Changes here are that we don't assign the record if the target 
-  # has already been set and we attach all of the records into a new jit preloader
+  # A monkey patch to ActiveRecord. The old method looked like the snippet
+  # below. Our changes here are that we don't assign the record if the
+  # target has already been set, and we attach all of the records to a new
+  # jit preloader.
+  #
   # def preload(preloader)
   #   associated_records_by_owner(preloader).each do |owner, associated_records|
   #     record = associated_records.first
@@ -11,6 +12,7 @@ class ActiveRecord::Associations::Preloader::SingularAssociation
   #     association.target = record
   #   end
   # end
+
   def preload(preloader)
     return unless reflection.scope.nil? || reflection.scope.arity == 0
     all_records = []

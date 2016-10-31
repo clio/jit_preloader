@@ -1,9 +1,9 @@
 class ActiveRecord::Associations::Preloader::CollectionAssociation
   private
-  # Monkey patch
-  # Old method looked like below
-  # Changes here are that we remove records that are already
-  # part of the target and we attach all of the records into a new jit preloader
+  # A monkey patch to ActiveRecord. The old method looked like the snippet
+  # below. Our changes here are that we remove records that are already
+  # part of the target, then attach all of the records to a new jit preloader.
+  #
   # def preload(preloader)
   #   associated_records_by_owner(preloader).each do |owner, records|
   #     association = owner.association(reflection.name)
@@ -19,9 +19,9 @@ class ActiveRecord::Associations::Preloader::CollectionAssociation
     associated_records_by_owner(preloader).each do |owner, records|
       association = owner.association(reflection.name)
       association.loaded!
-      # It is possible that some of the records are loaded already
-      # We don't want to duplicate them, but we also want to preserve in-memory the original copy
-      # so that we don't blow away in memory changes.
+      # It is possible that some of the records are loaded already.
+      # We don't want to duplicate them, but we also want to preserve
+      # the original copy so that we don't blow away in-memory changes.
       new_records = association.target.any? ? records - association.target : records
 
       association.target.concat(new_records)
