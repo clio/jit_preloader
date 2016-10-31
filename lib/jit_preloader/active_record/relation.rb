@@ -2,8 +2,8 @@ class ActiveRecord::Relation
 
   def calculate_with_jit(*args)
     if respond_to?(:proxy_association) && proxy_association.owner && proxy_association.owner.jit_n_plus_one_tracking
-      ActiveSupport::Notifications.publish("n_plus_one_query", 
-                                           source: proxy_association.owner, 
+      ActiveSupport::Notifications.publish("n_plus_one_query",
+                                           source: proxy_association.owner,
                                            association: "#{proxy_association.reflection.name}.#{args.first}")
     end
     calculate_without_jit(*args)
@@ -16,7 +16,7 @@ class ActiveRecord::Relation
       if limit_value != 1
         records.each{ |record| record.jit_n_plus_one_tracking = true }
         if jit_preload? || JitPreloader.globally_enabled?
-          JitPreloader::Preloader.attach(records) 
+          JitPreloader::Preloader.attach(records)
         end
       end
     end

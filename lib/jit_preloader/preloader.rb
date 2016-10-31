@@ -13,8 +13,8 @@ module JitPreloader
     end
 
     def jit_preload(association)
-      # It is possible that the records array has multiple different classes (think single table inheritance)
-      # Thus, it is possible that some of the records don't have an association
+      # It is possible that the records array has multiple different classes (think single table inheritance).
+      # Thus, it is possible that some of the records don't have an association.
       records_with_association = records.reject{|r| r.class.reflect_on_association(association).nil? }
       preload records_with_association, association
     end

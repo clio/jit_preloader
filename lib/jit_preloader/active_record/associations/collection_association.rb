@@ -10,16 +10,16 @@ class ActiveRecord::Associations::CollectionAssociation
     jit_loaded = loaded?
 
     load_target_without_jit.tap do |records|
-      # We should not act on non-persisted objects, or if it we started this method already loaded
+      # We should not act on non-persisted objects, or ones that are already loaded.
       if owner.persisted? && !was_loaded
-        # If we went through a JIT preload, then we will have attached another JitPreloader elsewhere
-        JitPreloader::Preloader.attach(records) if records.any? && !jit_loaded && JitPreloader.globally_enabled? 
+        # If we went through a JIT preload, then we will have attached another JitPreloader elsewhere.
+        JitPreloader::Preloader.attach(records) if records.any? && !jit_loaded && JitPreloader.globally_enabled?
 
         # If the records were not pre_loaded
         records.each{ |record| record.jit_n_plus_one_tracking = true }
-        
+
         if !jit_loaded && owner.jit_n_plus_one_tracking
-          ActiveSupport::Notifications.publish("n_plus_one_query", 
+          ActiveSupport::Notifications.publish("n_plus_one_query",
                                                source: owner, association: reflection.name)
         end
       end
