@@ -14,7 +14,7 @@ class ActiveRecord::Associations::Preloader::CollectionAssociation
   # end
 
   def preload(preloader)
-    return unless reflection.scope.nil? || reflection.scope.arity == 0
+    return unless (reflection.scope.nil? || reflection.scope.arity == 0) && klass.ancestors.include?(ActiveRecord::Base)
     all_records = []
     associated_records_by_owner(preloader).each do |owner, records|
       association = owner.association(reflection.name)
