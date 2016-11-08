@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    jit_preloader (0.0.1)
+    jit_preloader (0.0.3)
       activerecord (~> 4.2)
       activesupport
 
