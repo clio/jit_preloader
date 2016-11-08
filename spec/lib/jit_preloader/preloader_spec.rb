@@ -38,6 +38,19 @@ RSpec.describe JitPreloader::Preloader do
     ->(event, data){ source_map[data[:source]] << data[:association] }
   end
 
+  context "when we marshal dump the active record object" do
+    it "nullifes the jit_preloader reference" do
+      contacts = Contact.jit_preload.to_a
+      reloaded_contacts = contacts.collect{|r| Marshal.load(Marshal.dump(r)) }
+      contacts.each do |c|
+        expect(c.jit_preloader).to_not be_nil
+      end
+      reloaded_contacts.each do |c|
+        expect(c.jit_preloader).to be_nil
+      end
+    end
+  end
+
   context "when the preloader is globally enabled" do
     around do |example|
       JitPreloader.globally_enabled = true
