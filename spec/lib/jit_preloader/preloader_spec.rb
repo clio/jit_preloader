@@ -4,9 +4,9 @@ RSpec.describe JitPreloader::Preloader do
 
   let!(:contact1) do
     Contact.create(
-                   name: "Only Addresses", 
+                   name: "Only Addresses",
                    addresses: [
-                               Address.new(street: "123 Fake st", country: canada), 
+                               Address.new(street: "123 Fake st", country: canada),
                                Address.new(street: "21 Jump st", country: usa)
                               ]
                    )
@@ -21,9 +21,9 @@ RSpec.describe JitPreloader::Preloader do
 
   let!(:contact3) do
     Contact.create(
-                   name: "Both!", 
+                   name: "Both!",
                    addresses: [
-                               Address.new(street: "1 First st", country: canada), 
+                               Address.new(street: "1 First st", country: canada),
                                Address.new(street: "10 Tenth Ave", country: usa)
                               ],
                    email_address: EmailAddress.new(address: "woot@woot.com"),
@@ -36,6 +36,36 @@ RSpec.describe JitPreloader::Preloader do
   let(:source_map) { Hash.new{|h,k| h[k]= Array.new } }
   let(:callback) do
     ->(event, data){ source_map[data[:source]] << data[:association] }
+  end
+
+  context "when preloading an aggregate" do
+    context "without jit_preload" do
+      it "generates N+1 query notifications for each one" do
+        ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
+          counts = [2,0,2]
+          maxes = [11,0,12]
+          Contact.all.each_with_index do |c, i|
+            expect(c.addresses_count).to eql counts[i]
+            expect(c.addresses_max_street_length).to eql maxes[i]
+          end
+        end
+        contact_queries = [contact1,contact2, contact3].product([["addresses.count", "addresses.maximum"]])
+        expect(source_map).to eql(Hash[contact_queries])
+      end
+    end
+    context "without jit_preload" do
+      it "generates N+1 query notifications for each one" do
+        ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
+          counts = [2,0,2]
+          maxes = [11,0,12]
+          Contact.jit_preload.each_with_index do |c, i|
+            expect(c.addresses_count).to eql counts[i]
+            expect(c.addresses_max_street_length).to eql maxes[i]
+          end
+        end
+        expect(source_map).to eql({})
+      end
+    end
   end
 
   context "when we marshal dump the active record object" do
@@ -73,7 +103,7 @@ RSpec.describe JitPreloader::Preloader do
         end
         contact_queries = [contact1,contact2, contact3].product([["addresses.count", "addresses.sum"]])
         expect(source_map).to eql(Hash[contact_queries])
-      end      
+      end
     end
   end
 
@@ -85,7 +115,7 @@ RSpec.describe JitPreloader::Preloader do
         end
         contact_queries = [contact1,contact2, contact3].product([["addresses.count", "addresses.sum"]])
         expect(source_map).to eql(Hash[contact_queries])
-      end      
+      end
     end
 
     context "when explicitly finding a contact" do
@@ -140,7 +170,7 @@ RSpec.describe JitPreloader::Preloader do
           contact_queries = [contact1,contact2,contact3].product([[:email_address]])
           address_queries = Address.all.product([[:country]])
           expect(source_map).to eql(Hash[address_queries.concat(contact_queries)])
-        end        
+        end
       end
 
       context "and we use jit preload" do
