@@ -137,6 +137,42 @@ Contact.jit_preload.each do |contact|
 end
 ```
 
+### Loading aggregate methods on associations
+
+There is now a `has_many_aggregate` method available for ActiveRecord::Base. This will dynamically create a method available on objects that will allow making aggregate queries for a collection.
+
+```ruby
+# old
+Contact.all.each do |contact|
+  contact.addresses.maximum("LENGTH(street)")
+  contact.addresses.count
+end
+# SELECT * FROM contacts
+# SELECT MAX(LENGTH(street)) FROM addresses WHERE contact_id = 1
+# SELECT COUNT(*) FROM addresses WHERE contact_id = 1
+# SELECT MAX(LENGTH(street)) FROM addresses WHERE contact_id = 2
+# SELECT COUNT(*) FROM addresses WHERE contact_id = 2
+# SELECT MAX(LENGTH(street)) FROM addresses WHERE contact_id = 3
+# SELECT COUNT(*) FROM addresses WHERE contact_id = 3
+# ...
+
+#new
+class Contact < ActiveRecord::Bas
+  has_many :addresses
+  has_many_aggregate :addresses, :max_street_length, :maximum, "LENGTH(street)"
+  has_many_aggregate :addresses, :count_all, :count, "*"
+end
+
+Contact.jit_preload.each do |contact|
+  contact.addresses_max_street_length
+  contact.adddresses_count_all
+end
+# SELECT * FROM contacts
+# SELECT contact_id, MAX(LENGTH(street)) FROM addresses WHERE contact_id IN (1, 2, 3, ...) GROUP BY contact_id
+# SELECT contact_id, COUNT(*) FROM addresses WHERE contact_id IN (1, 2, 3, ...) GROUP BY contact_id
+
+```
+
 ### Jit preloading globally across your application
 
 The JitPreloader can be globally enabled, in which case most N+1 queries in your app should just disappear. It is off by default.
@@ -165,7 +201,6 @@ This is mostly a magic bullet, but it doesn't solve all database-related problem
 ```ruby
 Contact.all.each do |contact|
   contact.emails.reload                         # Reloading the association
-  contact.phone_numbers.max("LENGTH(number)")   # Aggregate functions on the association
   contact.addresses.where(billing: true).to_a   # Querying the association
 end
 ```
