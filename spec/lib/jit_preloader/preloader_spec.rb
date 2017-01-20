@@ -3,31 +3,32 @@ require 'spec_helper'
 RSpec.describe JitPreloader::Preloader do
 
   let!(:contact1) do
-    Contact.create(
-                   name: "Only Addresses",
-                   addresses: [
-                               Address.new(street: "123 Fake st", country: canada),
-                               Address.new(street: "21 Jump st", country: usa)
-                              ]
-                   )
+    addresses = [
+      Address.new(street: "123 Fake st", country: canada),
+      Address.new(street: "21 Jump st", country: usa)
+    ]
+    phones = [
+      PhoneNumber.new(phone: "4445556666"),
+      PhoneNumber.new(phone: "2223333444")
+    ]
+    Contact.create(name: "Only Addresses", addresses: addresses, phone_numbers: phones)
   end
 
   let!(:contact2) do
-    Contact.create(
-                   name: "Only Emails",
-                   email_address: EmailAddress.new(address: "woot@woot.com"),
-                   )
+    Contact.create(name: "Only Emails", email_address: EmailAddress.new(address: "woot@woot.com"))
   end
 
   let!(:contact3) do
+    addresses = [
+      Address.new(street: "1 First st", country: canada),
+      Address.new(street: "10 Tenth Ave", country: usa)
+    ]
     Contact.create(
-                   name: "Both!",
-                   addresses: [
-                               Address.new(street: "1 First st", country: canada),
-                               Address.new(street: "10 Tenth Ave", country: usa)
-                              ],
-                   email_address: EmailAddress.new(address: "woot@woot.com"),
-                   )
+      name: "Both!",
+      addresses: addresses,
+      email_address: EmailAddress.new(address: "woot@woot.com"),
+      phone_numbers: [PhoneNumber.new(phone: "1234567890")]
+    )
   end
 
   let(:canada) { Country.create(name: "Canada") }
@@ -39,18 +40,21 @@ RSpec.describe JitPreloader::Preloader do
   end
 
   context "when preloading an aggregate" do
+    let(:addresses_counts) { [2, 0, 2] }
+    let(:phone_number_counts) { [2, 0, 1] }
+    let(:maxes) { [11, 0, 12] }
+
     context "without jit_preload" do
       it "generates N+1 query notifications for each one" do
         ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
-          counts = [2,0,2]
-          maxes = [11,0,12]
           Contact.all.each_with_index do |c, i|
-            expect(c.addresses_count).to eql counts[i]
+            expect(c.addresses_count).to eql addresses_counts[i]
             expect(c.addresses_max_street_length).to eql maxes[i]
+            expect(c.phone_numbers_count).to eql phone_number_counts[i]
           end
         end
 
-        contact_queries = [contact1,contact2, contact3].product([["addresses.count", "addresses.maximum"]])
+        contact_queries = [contact1, contact2, contact3].product([["addresses.count", "addresses.maximum", "phone_numbers.count"]])
         expect(source_map).to eql(Hash[contact_queries])
       end
     end
@@ -58,11 +62,10 @@ RSpec.describe JitPreloader::Preloader do
     context "with jit_preload" do
       it "doesn NOT generate N+1 query notifications" do
         ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
-          counts = [2,0,2]
-          maxes = [11,0,12]
           Contact.jit_preload.each_with_index do |c, i|
-            expect(c.addresses_count).to eql counts[i]
+            expect(c.addresses_count).to eql addresses_counts[i]
             expect(c.addresses_max_street_length).to eql maxes[i]
+            expect(c.phone_numbers_count).to eql phone_number_counts[i]
           end
         end
 
