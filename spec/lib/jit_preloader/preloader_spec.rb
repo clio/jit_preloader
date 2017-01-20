@@ -49,12 +49,14 @@ RSpec.describe JitPreloader::Preloader do
             expect(c.addresses_max_street_length).to eql maxes[i]
           end
         end
+
         contact_queries = [contact1,contact2, contact3].product([["addresses.count", "addresses.maximum"]])
         expect(source_map).to eql(Hash[contact_queries])
       end
     end
-    context "without jit_preload" do
-      it "generates N+1 query notifications for each one" do
+
+    context "with jit_preload" do
+      it "doesn NOT generate N+1 query notifications" do
         ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
           counts = [2,0,2]
           maxes = [11,0,12]
@@ -63,6 +65,7 @@ RSpec.describe JitPreloader::Preloader do
             expect(c.addresses_max_street_length).to eql maxes[i]
           end
         end
+
         expect(source_map).to eql({})
       end
     end
