@@ -17,13 +17,16 @@ module JitPreloadExtension
       define_method(method_name) do
         self.jit_preload_aggregates ||= {}
 
-        return jit_preload_aggregates[method_name] if jit_preload_aggregates[method_name]
+        return jit_preload_aggregates[method_name] if jit_preload_aggregates.key?(method_name)
         if jit_preloader
           reflection = association(assoc).reflection
           primary_ids = jit_preloader.records.collect{|r| r[reflection.active_record_primary_key] }
           klass = reflection.klass
 
-          preloaded_data = Hash[klass
+          association_scope = klass
+          association_scope = association_scope.instance_exec(&reflection.scope).reorder(nil) if reflection.scope
+
+          preloaded_data = Hash[association_scope
                                  .where(reflection.foreign_key => primary_ids)
                                  .group(reflection.foreign_key)
                                  .send(aggregate, field)
