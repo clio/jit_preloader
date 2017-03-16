@@ -5,7 +5,7 @@ module JitPreloader
 
     def self.attach(records)
       new.tap do |loader|
-        loader.records = records
+        loader.records = records.dup
         records.each do |record|
           record.jit_preloader = loader
         end
@@ -21,7 +21,7 @@ module JitPreloader
 
     # We do not want the jit_preloader to be dumpable
     # If you dump a ActiveRecord::Base object that has a jit_preloader instance variable
-    # you will also end up dumping all of the records the preloader has reference to. 
+    # you will also end up dumping all of the records the preloader has reference to.
     # Imagine getting N objects from a query and dumping each one of those into a cache
     # each object would dump N+1 objects which means you'll end up storing O(N^2) memory. Thats no good.
     # So instead, we will just nullify the jit_preloader on load

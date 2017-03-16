@@ -93,6 +93,12 @@ RSpec.describe JitPreloader::Preloader do
       example.run
       JitPreloader.globally_enabled = false
     end
+    it "doesn't reference the same records array that is returned" do
+      contacts = Contact.all.to_a
+      contacts << "A string"
+      expect(contacts.first.jit_preloader.records).to eql Contact.all.to_a
+    end
+
     context "when grabbing all of the address'es contries and email addresses" do
       it "doesn't generate an N+1 query ntoification" do
         ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
