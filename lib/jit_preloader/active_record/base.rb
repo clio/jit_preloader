@@ -6,6 +6,11 @@ module JitPreloadExtension
     attr_accessor :jit_preloader
     attr_accessor :jit_n_plus_one_tracking
     attr_accessor :jit_preload_aggregates
+
+    def reload(*args)
+      self.jit_preload_aggregates = {}
+      super
+    end
   end
 
   class_methods do
@@ -44,12 +49,6 @@ module JitPreloadExtension
         end
         jit_preload_aggregates[key]
       end
-
-      def reload(*args)
-        self.jit_preload_aggregates = {}
-        super
-      end
-
     end
   end
 end

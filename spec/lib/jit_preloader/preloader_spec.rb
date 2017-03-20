@@ -204,6 +204,16 @@ RSpec.describe JitPreloader::Preloader do
           expect(source_map).to eql({})
         end
       end
+
+      context "reload" do
+        it "clears the jit_preload_aggregates" do
+          contact = Contact.jit_preload.first
+
+          contact.addresses_count
+
+          expect { contact.reload }.to change{ contact.jit_preload_aggregates }.to({})
+        end
+      end
     end
   end
 
