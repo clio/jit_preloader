@@ -14,7 +14,7 @@ module JitPreloadExtension
     def has_many_aggregate(assoc, name, aggregate, field, default: 0)
       method_name = "#{assoc}_#{name}"
 
-      define_method(method_name) do
+      define_method(method_name) do |conditions={}|
         self.jit_preload_aggregates ||= {}
 
         return jit_preload_aggregates[method_name] if jit_preload_aggregates.key?(method_name)
@@ -26,8 +26,10 @@ module JitPreloadExtension
           association_scope = klass
           association_scope = association_scope.instance_exec(&reflection.scope).reorder(nil) if reflection.scope
 
+          conditions[reflection.foreign_key] = primary_ids
+
           preloaded_data = Hash[association_scope
-                                 .where(reflection.foreign_key => primary_ids)
+                                 .where(conditions)
                                  .group(reflection.foreign_key)
                                  .send(aggregate, field)
                                ]
@@ -37,7 +39,7 @@ module JitPreloadExtension
             record.jit_preload_aggregates[method_name] = preloaded_data[record.id] || default
           end
         else
-          self.jit_preload_aggregates[method_name] = send(assoc).send(aggregate, field) || default
+          self.jit_preload_aggregates[method_name] = send(assoc).where(conditions).send(aggregate, field) || default
         end
         jit_preload_aggregates[method_name]
       end

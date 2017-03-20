@@ -5,7 +5,8 @@ RSpec.describe JitPreloader::Preloader do
   let!(:contact1) do
     addresses = [
       Address.new(street: "123 Fake st", country: canada),
-      Address.new(street: "21 Jump st", country: usa)
+      Address.new(street: "21 Jump st", country: usa),
+      Address.new(street: "90210 Beverly Hills", country: usa)
     ]
     phones = [
       PhoneNumber.new(phone: "4445556666"),
@@ -40,9 +41,10 @@ RSpec.describe JitPreloader::Preloader do
   end
 
   context "when preloading an aggregate" do
-    let(:addresses_counts) { [2, 0, 2] }
+    let(:addresses_counts) { [3, 0, 2] }
+    let(:usa_addresses_counts) { [2, 0, 1] }
     let(:phone_number_counts) { [2, 0, 1] }
-    let(:maxes) { [11, 0, 12] }
+    let(:maxes) { [19, 0, 12] }
 
     context "without jit_preload" do
       it "generates N+1 query notifications for each one" do
@@ -60,7 +62,7 @@ RSpec.describe JitPreloader::Preloader do
     end
 
     context "with jit_preload" do
-      it "doesn NOT generate N+1 query notifications" do
+      it "does NOT generate N+1 query notifications" do
         ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
           Contact.jit_preload.each_with_index do |c, i|
             expect(c.addresses_count).to eql addresses_counts[i]
@@ -70,6 +72,12 @@ RSpec.describe JitPreloader::Preloader do
         end
 
         expect(source_map).to eql({})
+      end
+
+      it "can handle dynamic queries" do
+        Contact.jit_preload.each_with_index do |c, i|
+          expect(c.addresses_count(country: usa)).to eql usa_addresses_counts[i]
+        end
       end
     end
   end
