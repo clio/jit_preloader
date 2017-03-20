@@ -42,7 +42,6 @@ RSpec.describe JitPreloader::Preloader do
 
   context "when preloading an aggregate" do
     let(:addresses_counts) { [3, 0, 2] }
-    let(:usa_addresses_counts) { [2, 0, 1] }
     let(:phone_number_counts) { [2, 0, 1] }
     let(:maxes) { [19, 0, 12] }
 
@@ -62,6 +61,9 @@ RSpec.describe JitPreloader::Preloader do
     end
 
     context "with jit_preload" do
+      let(:usa_addresses_counts) { [2, 0, 1] }
+      let(:can_addresses_counts) { [1, 0, 1] }
+
       it "does NOT generate N+1 query notifications" do
         ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
           Contact.jit_preload.each_with_index do |c, i|
@@ -77,6 +79,7 @@ RSpec.describe JitPreloader::Preloader do
       it "can handle dynamic queries" do
         Contact.jit_preload.each_with_index do |c, i|
           expect(c.addresses_count(country: usa)).to eql usa_addresses_counts[i]
+          expect(c.addresses_count(country: canada)).to eql can_addresses_counts[i]
         end
       end
     end

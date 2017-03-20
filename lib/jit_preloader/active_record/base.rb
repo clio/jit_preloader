@@ -17,7 +17,8 @@ module JitPreloadExtension
       define_method(method_name) do |conditions={}|
         self.jit_preload_aggregates ||= {}
 
-        return jit_preload_aggregates[method_name] if jit_preload_aggregates.key?(method_name)
+        key = JitPreloadExtension.generate_key(method_name, conditions)
+        return jit_preload_aggregates[key] if jit_preload_aggregates.key?(key)
         if jit_preloader
           reflection = association(assoc).reflection
           primary_ids = jit_preloader.records.collect{|r| r[reflection.active_record_primary_key] }
@@ -36,12 +37,12 @@ module JitPreloadExtension
 
           jit_preloader.records.each do |record|
             record.jit_preload_aggregates ||= {}
-            record.jit_preload_aggregates[method_name] = preloaded_data[record.id] || default
+            record.jit_preload_aggregates[key] = preloaded_data[record.id] || default
           end
         else
-          self.jit_preload_aggregates[method_name] = send(assoc).where(conditions).send(aggregate, field) || default
+          self.jit_preload_aggregates[key] = send(assoc).where(conditions).send(aggregate, field) || default
         end
-        jit_preload_aggregates[method_name]
+        jit_preload_aggregates[key]
       end
 
       def reload(*args)
@@ -50,6 +51,15 @@ module JitPreloadExtension
       end
 
     end
+
+  end
+
+  def self.generate_key(method_name, conditions)
+    return method_name if conditions.empty?
+
+    condition_string = conditions.map { |k, v| [k,v].map(&:to_s).join("=") }.join(",")
+
+    "#{method_name}|#{condition_string}"
   end
 end
 
