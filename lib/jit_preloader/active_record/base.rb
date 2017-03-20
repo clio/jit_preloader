@@ -17,7 +17,7 @@ module JitPreloadExtension
       define_method(method_name) do |conditions={}|
         self.jit_preload_aggregates ||= {}
 
-        key = JitPreloadExtension.generate_key(method_name, conditions)
+        key = "#{method_name}|#{conditions.sort.hash}"
         return jit_preload_aggregates[key] if jit_preload_aggregates.key?(key)
         if jit_preloader
           reflection = association(assoc).reflection
@@ -51,15 +51,6 @@ module JitPreloadExtension
       end
 
     end
-
-  end
-
-  def self.generate_key(method_name, conditions)
-    return method_name if conditions.empty?
-
-    condition_string = conditions.map { |k, v| [k,v].map(&:to_s).join("=") }.join(",")
-
-    "#{method_name}|#{condition_string}"
   end
 end
 
