@@ -6,6 +6,11 @@ module JitPreloadExtension
     attr_accessor :jit_preloader
     attr_accessor :jit_n_plus_one_tracking
     attr_accessor :jit_preload_aggregates
+
+    def reload(*args)
+      self.jit_preload_aggregates = {}
+      super
+    end
   end
 
   class_methods do
@@ -14,10 +19,11 @@ module JitPreloadExtension
     def has_many_aggregate(assoc, name, aggregate, field, default: 0)
       method_name = "#{assoc}_#{name}"
 
-      define_method(method_name) do
+      define_method(method_name) do |conditions={}|
         self.jit_preload_aggregates ||= {}
 
-        return jit_preload_aggregates[method_name] if jit_preload_aggregates.key?(method_name)
+        key = "#{method_name}|#{conditions.sort.hash}"
+        return jit_preload_aggregates[key] if jit_preload_aggregates.key?(key)
         if jit_preloader
           reflection = association(assoc).reflection
           primary_ids = jit_preloader.records.collect{|r| r[reflection.active_record_primary_key] }
@@ -26,27 +32,23 @@ module JitPreloadExtension
           association_scope = klass
           association_scope = association_scope.instance_exec(&reflection.scope).reorder(nil) if reflection.scope
 
+          conditions[reflection.foreign_key] = primary_ids
+
           preloaded_data = Hash[association_scope
-                                 .where(reflection.foreign_key => primary_ids)
+                                 .where(conditions)
                                  .group(reflection.foreign_key)
                                  .send(aggregate, field)
                                ]
 
           jit_preloader.records.each do |record|
             record.jit_preload_aggregates ||= {}
-            record.jit_preload_aggregates[method_name] = preloaded_data[record.id] || default
+            record.jit_preload_aggregates[key] = preloaded_data[record.id] || default
           end
         else
-          self.jit_preload_aggregates[method_name] = send(assoc).send(aggregate, field) || default
+          self.jit_preload_aggregates[key] = send(assoc).where(conditions).send(aggregate, field) || default
         end
-        jit_preload_aggregates[method_name]
+        jit_preload_aggregates[key]
       end
-
-      def reload(*args)
-        self.jit_preload_aggregates = {}
-        super
-      end
-
     end
   end
 end
