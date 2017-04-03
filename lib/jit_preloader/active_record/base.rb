@@ -8,9 +8,18 @@ module JitPreloadExtension
     attr_accessor :jit_preload_aggregates
 
     def reload(*args)
-      self.jit_preload_aggregates = {}
+      clear_jit_preloader!
       super
     end
+
+    def clear_jit_preloader!
+      self.jit_preload_aggregates = {}
+      if jit_preloader
+        jit_preloader.records.delete(self)
+        self.jit_preloader = nil
+      end
+    end
+
   end
 
   class_methods do
