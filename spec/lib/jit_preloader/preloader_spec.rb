@@ -82,6 +82,12 @@ RSpec.describe JitPreloader::Preloader do
           expect(c.addresses_count(country: canada)).to eql can_addresses_counts[i]
         end
       end
+
+      it "can handle strings for queries" do
+        Contact.jit_preload.each_with_index do |c, i|
+          expect(c.addresses_count("contact_id IS NOT NULL")).to eql(usa_addresses_counts[i] + can_addresses_counts[i])
+        end
+      end
     end
   end
 
