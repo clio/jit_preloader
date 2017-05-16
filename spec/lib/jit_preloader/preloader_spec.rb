@@ -55,7 +55,7 @@ RSpec.describe JitPreloader::Preloader do
           end
         end
 
-        contact_queries = [contact1, contact2, contact3].to_a.product([["addresses.count", "addresses.maximum", "phone_numbers.count"]])
+        contact_queries = [contact1, contact2, contact3].product([["addresses.count", "addresses.maximum", "phone_numbers.count"]])
         expect(source_map).to eql(Hash[contact_queries])
       end
     end
@@ -124,7 +124,7 @@ RSpec.describe JitPreloader::Preloader do
         ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
           Contact.all.each{|c| c.addresses.count; c.addresses.sum(:id) }
         end
-        contact_queries = [contact1,contact2, contact3].to_a.product([["addresses.count", "addresses.sum"]])
+        contact_queries = [contact1,contact2, contact3].product([["addresses.count", "addresses.sum"]])
         expect(source_map).to eql(Hash[contact_queries])
       end
     end
@@ -136,7 +136,7 @@ RSpec.describe JitPreloader::Preloader do
         ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
           Contact.all.each{|c| c.addresses.count; c.addresses.sum(:id) }
         end
-        contact_queries = [contact1,contact2, contact3].to_a.product([["addresses.count", "addresses.sum"]])
+        contact_queries = [contact1,contact2, contact3].product([["addresses.count", "addresses.sum"]])
         expect(source_map).to eql(Hash[contact_queries])
       end
     end
@@ -156,7 +156,7 @@ RSpec.describe JitPreloader::Preloader do
         ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
           Contact.find(contact1.id, contact2.id).each{|c| c.addresses.collect(&:country); c.email_address }
         end
-        contact_queries = [contact1,contact2].to_a.product([[:addresses, :email_address]])
+        contact_queries = [contact1,contact2].product([[:addresses, :email_address]])
         address_queries = Address.where(contact_id: contact1.id).to_a.product([[:country]])
 
         expect(source_map).to eql(Hash[address_queries.concat(contact_queries)])
@@ -180,7 +180,7 @@ RSpec.describe JitPreloader::Preloader do
         ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
           Contact.all.each{|c| c.addresses.collect(&:country); c.email_address }
         end
-        contact_queries = [contact1,contact2,contact3].to_a.product([[:addresses, :email_address]])
+        contact_queries = [contact1,contact2,contact3].product([[:addresses, :email_address]])
         address_queries = Address.all.to_a.product([[:country]])
         expect(source_map).to eql(Hash[address_queries.concat(contact_queries)])
       end
@@ -190,7 +190,7 @@ RSpec.describe JitPreloader::Preloader do
           ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
             Contact.preload(:addresses).each{|c| c.addresses.collect(&:country); c.email_address }
           end
-          contact_queries = [contact1,contact2,contact3].to_a.product([[:email_address]])
+          contact_queries = [contact1,contact2,contact3].product([[:email_address]])
           address_queries = Address.all.to_a.product([[:country]])
           expect(source_map).to eql(Hash[address_queries.concat(contact_queries)])
         end
