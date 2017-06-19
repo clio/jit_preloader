@@ -146,7 +146,7 @@ RSpec.describe JitPreloader::Preloader do
         ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
           Contact.find(contact1.id).tap{|c| c.addresses.collect(&:country); c.email_address }
         end
-        address_queries = Address.where(contact_id: 1).product([[:country]])
+        address_queries = Address.where(contact_id: 1).to_a.product([[:country]])
         expect(source_map).to eql(Hash[address_queries])
       end
     end
@@ -157,7 +157,7 @@ RSpec.describe JitPreloader::Preloader do
           Contact.find(contact1.id, contact2.id).each{|c| c.addresses.collect(&:country); c.email_address }
         end
         contact_queries = [contact1,contact2].product([[:addresses, :email_address]])
-        address_queries = Address.where(contact_id: contact1.id).product([[:country]])
+        address_queries = Address.where(contact_id: contact1.id).to_a.product([[:country]])
 
         expect(source_map).to eql(Hash[address_queries.concat(contact_queries)])
       end
@@ -169,7 +169,7 @@ RSpec.describe JitPreloader::Preloader do
           Contact.first.tap{|c| c.addresses.collect(&:country); c.email_address }
         end
 
-        address_queries = Address.where(contact_id: contact1.id).product([[:country]])
+        address_queries = Address.where(contact_id: contact1.id).to_a.product([[:country]])
 
         expect(source_map).to eql(Hash[address_queries])
       end
@@ -181,7 +181,7 @@ RSpec.describe JitPreloader::Preloader do
           Contact.all.each{|c| c.addresses.collect(&:country); c.email_address }
         end
         contact_queries = [contact1,contact2,contact3].product([[:addresses, :email_address]])
-        address_queries = Address.all.product([[:country]])
+        address_queries = Address.all.to_a.product([[:country]])
         expect(source_map).to eql(Hash[address_queries.concat(contact_queries)])
       end
 
@@ -191,7 +191,7 @@ RSpec.describe JitPreloader::Preloader do
             Contact.preload(:addresses).each{|c| c.addresses.collect(&:country); c.email_address }
           end
           contact_queries = [contact1,contact2,contact3].product([[:email_address]])
-          address_queries = Address.all.product([[:country]])
+          address_queries = Address.all.to_a.product([[:country]])
           expect(source_map).to eql(Hash[address_queries.concat(contact_queries)])
         end
       end

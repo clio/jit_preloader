@@ -5,7 +5,6 @@ require 'active_record'
 
 require "jit_preloader/version"
 require 'jit_preloader/active_record/base'
-require 'jit_preloader/active_record/query_methods'
 require 'jit_preloader/active_record/relation'
 require 'jit_preloader/active_record/associations/collection_association'
 require 'jit_preloader/active_record/associations/singular_association'
