@@ -157,7 +157,7 @@ end
 # ...
 
 #new
-class Contact < ActiveRecord::Bas
+class Contact < ActiveRecord::Base
   has_many :addresses
   has_many_aggregate :addresses, :max_street_length, :maximum, "LENGTH(street)", default: nil
   has_many_aggregate :addresses, :count_all, :count, "*"
