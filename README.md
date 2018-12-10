@@ -165,7 +165,7 @@ end
 
 Contact.jit_preload.each do |contact|
   contact.addresses_max_street_length
-  contact.adddresses_count_all
+  contact.addresses_count_all
 end
 # SELECT * FROM contacts
 # SELECT contact_id, MAX(LENGTH(street)) FROM addresses WHERE contact_id IN (1, 2, 3, ...) GROUP BY contact_id
