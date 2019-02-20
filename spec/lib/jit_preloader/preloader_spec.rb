@@ -33,6 +33,9 @@ RSpec.describe JitPreloader::Preloader do
   end
 
   let!(:contact_owner) do
+    contact3.contact_owner_id = contact1.id
+    contact3.contact_owner_type = "Address"
+    contact3.save!
     ContactOwner.create(
       contacts: [contact1, contact2],
     )
@@ -63,8 +66,6 @@ RSpec.describe JitPreloader::Preloader do
     end
 
     context "with jit_preload" do
-      let(:usa_addresses_counts) { [2, 0, 1] }
-      let(:can_addresses_counts) { [1, 0, 1] }
 
       it "does NOT generate N+1 query notifications" do
         ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
@@ -74,6 +75,12 @@ RSpec.describe JitPreloader::Preloader do
         end
 
         expect(source_map).to eql({})
+      end
+
+      it "can handle queries" do
+        ContactOwner.jit_preload.each_with_index do |c, i|
+          expect(c.contacts_count).to eql contact_owner_counts[i]
+        end
       end
     end
   end
