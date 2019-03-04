@@ -8,8 +8,12 @@ require 'jit_preloader/active_record/base'
 require 'jit_preloader/active_record/relation'
 require 'jit_preloader/active_record/associations/collection_association'
 require 'jit_preloader/active_record/associations/singular_association'
-require 'jit_preloader/active_record/associations/preloader/collection_association'
-require 'jit_preloader/active_record/associations/preloader/singular_association'
+if Gem::Version.new(ActiveRecord::VERSION::STRING) < Gem::Version.new("5.2.2")
+  require 'jit_preloader/active_record/associations/preloader/collection_association'
+  require 'jit_preloader/active_record/associations/preloader/singular_association'
+else
+  require 'jit_preloader/active_record/associations/preloader/association'
+end
 require 'jit_preloader/preloader'
 
 module JitPreloader
