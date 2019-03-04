@@ -32,12 +32,57 @@ RSpec.describe JitPreloader::Preloader do
     )
   end
 
+  let!(:contact_owner) do
+    contact3.contact_owner_id = contact1.id
+    contact3.contact_owner_type = "Address"
+    contact3.save!
+    ContactOwner.create(
+      contacts: [contact1, contact2],
+    )
+  end
+
   let(:canada) { Country.create(name: "Canada") }
   let(:usa) { Country.create(name: "U.S.A") }
 
   let(:source_map) { Hash.new{|h,k| h[k]= Array.new } }
   let(:callback) do
     ->(event, data){ source_map[data[:source]] << data[:association] }
+  end
+
+  context "when preloading an aggregate as polymorphic" do
+    let(:contact_owner_counts) { [2] }
+
+    context "without jit preload" do
+      it "generates N+1 query notifications for each one" do
+        ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
+          ContactOwner.all.each_with_index do |c, i|
+            expect(c.contacts_count).to eql contact_owner_counts[i]
+          end
+        end
+
+        contact_owner_queries = [contact_owner].product([["contacts.count"]])
+        expect(source_map).to eql(Hash[contact_owner_queries])
+      end
+    end
+
+    context "with jit_preload" do
+
+      it "does NOT generate N+1 query notifications" do
+        ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
+          ContactOwner.jit_preload.each_with_index do |c, i|
+            expect(c.contacts_count).to eql contact_owner_counts[i]
+          end
+        end
+
+        expect(source_map).to eql({})
+      end
+
+      it "can handle queries" do
+        ContactOwner.jit_preload.each_with_index do |c, i|
+          expect(c.contacts_count).to eql contact_owner_counts[i]
+        end
+      end
+    end
   end
 
   context "when preloading an aggregate" do

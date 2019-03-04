@@ -43,6 +43,10 @@ module JitPreloadExtension
 
           conditions[reflection.foreign_key] = primary_ids
 
+          if reflection.type.present?
+            conditions[reflection.type] = self.class.name
+          end
+
           preloaded_data = Hash[association_scope
                                  .where(conditions)
                                  .group(reflection.foreign_key)
