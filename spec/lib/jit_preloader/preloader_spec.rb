@@ -85,6 +85,111 @@ RSpec.describe JitPreloader::Preloader do
     end
   end
 
+  context "when preloading an aggregate on a has_many through relationship" do
+    let(:country_contacts_counts) { [2, 3] }
+
+    context "without jit preload" do
+      it "generates N+1 query notifications for each one" do
+        ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
+          Country.all.each_with_index do |c, i|
+            expect(c.contacts_count).to eql country_contacts_counts[i]
+          end
+        end
+
+        country_contact_queries = [canada, usa].product([["contacts.count"]])
+        expect(source_map).to eql(Hash[country_contact_queries])
+      end
+    end
+
+    context "with jit_preload" do
+      it "does NOT generate N+1 query notifications" do
+        ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
+          Country.all.jit_preload.each_with_index do |c, i|
+            expect(c.contacts_count).to eql country_contacts_counts[i]
+          end
+        end
+
+        expect(source_map).to eql({})
+      end
+
+      it "can handle queries" do
+        Country.all.jit_preload.each_with_index do |c, i|
+          expect(c.contacts_count).to eql country_contacts_counts[i]
+        end
+      end
+    end
+  end
+
+  context "when preloading an aggregate on a polymorphic has_many through relationship" do
+    let(:contact_owner_addresses_counts) { [3] }
+
+    context "without jit preload" do
+      it "generates N+1 query notifications for each one" do
+        ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
+          ContactOwner.all.each_with_index do |c, i|
+            expect(c.addresses_count).to eql contact_owner_addresses_counts[i]
+          end
+        end
+
+        contact_owner_addresses_queries = [contact_owner].product([["addresses.count"]])
+        expect(source_map).to eql(Hash[contact_owner_addresses_queries])
+      end
+    end
+
+    context "with jit_preload" do
+      it "does NOT generate N+1 query notifications" do
+        ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
+          ContactOwner.all.jit_preload.each_with_index do |c, i|
+            expect(c.addresses_count).to eql contact_owner_addresses_counts[i]
+          end
+        end
+
+        expect(source_map).to eql({})
+      end
+
+      it "can handle queries" do
+        ContactOwner.all.jit_preload.each_with_index do |c, i|
+          expect(c.addresses_count).to eql contact_owner_addresses_counts[i]
+        end
+      end
+    end
+  end
+
+  context "when preloading a has_many through polymorphic aggregate where the through class has a polymorphic relationship to the target class" do
+    let(:contact_owner_counts) { [1, 2] }
+
+    context "without jit preload" do
+      it "generates N+1 query notifications for each one" do
+        ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
+          Country.all.each_with_index do |c, i|
+            expect(c.contact_owners_count).to eql contact_owner_counts[i]
+          end
+        end
+
+        contact_owner_queries = [canada, usa].product([["contact_owners.count"]])
+        expect(source_map).to eql(Hash[contact_owner_queries])
+      end
+    end
+
+    context "with jit_preload" do
+      it "does NOT generate N+1 query notifications" do
+        ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
+          Country.all.jit_preload.each_with_index do |c, i|
+            expect(c.contact_owners_count).to eql contact_owner_counts[i]
+          end
+        end
+
+        expect(source_map).to eql({})
+      end
+
+      it "can handle queries" do
+        Country.all.jit_preload.each_with_index do |c, i|
+          expect(c.contact_owners_count).to eql contact_owner_counts[i]
+        end
+      end
+    end
+  end
+
   context "when preloading an aggregate" do
     let(:addresses_counts) { [3, 0, 2] }
     let(:phone_number_counts) { [2, 0, 1] }

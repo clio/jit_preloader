@@ -38,20 +38,25 @@ module JitPreloadExtension
           primary_ids = jit_preloader.records.collect{|r| r[reflection.active_record_primary_key] }
           klass = reflection.klass
 
-          association_scope = klass
+          aggregate_association = reflection
+          while aggregate_association.through_reflection
+            aggregate_association = aggregate_association.through_reflection
+          end
+
+          association_scope = klass.all.merge(association(assoc).scope).unscope(where: aggregate_association.foreign_key)
           association_scope = association_scope.instance_exec(&reflection.scope).reorder(nil) if reflection.scope
 
-          conditions[reflection.foreign_key] = primary_ids
-
+          conditions[aggregate_association.table_name] = { aggregate_association.foreign_key => primary_ids }
           if reflection.type.present?
             conditions[reflection.type] = self.class.name
           end
+          group_by = "#{aggregate_association.table_name}.#{aggregate_association.foreign_key}"
 
           preloaded_data = Hash[association_scope
-                                 .where(conditions)
-                                 .group(reflection.foreign_key)
-                                 .send(aggregate, field)
-                               ]
+            .where(conditions)
+            .group(group_by)
+            .send(aggregate, field)
+          ]
 
           jit_preloader.records.each do |record|
             record.jit_preload_aggregates ||= {}
