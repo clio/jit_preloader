@@ -1,5 +1,3 @@
 steps:
-  - name: ":rspec:"
-    command:
-      - "gem install bundler"
-      - "bundle install && bundle exec rspec --color specs"
+  - name: ":rspec: RSpec"
+    command: "bundle install && bundle exec rspec --color specs"
