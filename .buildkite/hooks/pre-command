@@ -3,4 +3,4 @@
 
 set -eu
 
-eval "$(gem install bundler)"
+gem install bundler
