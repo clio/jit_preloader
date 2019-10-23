@@ -6,3 +6,4 @@ set -eu
 export PATH="$HOME/.rbenv/bin:$PATH"
 
 eval "$(rbenv init -)"
+eval "$(gem install bundler)"
