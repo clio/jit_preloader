@@ -2,6 +2,26 @@ require 'spec_helper'
 
 RSpec.describe JitPreloader::Preloader do
 
+  let!(:book) { Book.create(name: "Lord of the Rings") }
+
+  let!(:section) { Section.create(name: "Main", book: book) }
+  let!(:sub_section1) { SubSection.create(name: "Chapter 1", section: section) }
+  let!(:sub_section2) { SubSection.create(name: "Chapter 2", section: section) }
+
+  let!(:endorsement) { Endorsement.create(name: "Endorsement", book: book) }
+  let!(:endorsement_section1) { SubSection.create(name: "Endorsement 1", section: endorsement) }
+  let!(:endorsement_section2) { SubSection.create(name: "Endorsement 2", section: endorsement) }
+
+  it do
+    books = Book.jit_preload.to_a
+    expect(books.first.sub_sections_count).to eq 4
+  end
+
+  it do
+    books = Book.jit_preload.to_a
+    expect(books.first.endorsement_sub_sections_count).to eq 2
+  end
+
   let!(:contact1) do
     addresses = [
       Address.new(street: "123 Fake st", country: canada),

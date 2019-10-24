@@ -10,6 +10,15 @@ class Contact < ActiveRecord::Base
   has_many_aggregate :addresses, :count, :count, "*"
 end
 
+class Author < Contact
+  belongs_to :book
+  has_many :reviewers
+end
+
+class Reviewer < Contact
+  belongs_to :author
+end
+
 class Address < ActiveRecord::Base
   belongs_to :contact
   belongs_to :country
@@ -38,4 +47,27 @@ class ContactOwner < ActiveRecord::Base
 
   has_many_aggregate :contacts, :count, :count, "*"
   has_many_aggregate :addresses, :count, :count, "*"
+end
+
+class Book < ActiveRecord::Base
+  has_many :sections
+  has_many :sub_sections, through: :sections
+
+  has_many :endorsements
+  has_many :endorsement_sub_sections, through: :endorsements, source: :sub_sections
+
+  has_many_aggregate :sub_sections, :count, :count, "*"
+  has_many_aggregate :endorsement_sub_sections, :count, :count, "*"
+end
+
+class Section < ActiveRecord::Base
+  belongs_to :book
+  has_many :sub_sections
+end
+
+class Endorsement < Section
+end
+
+class SubSection < Section
+  belongs_to :section
 end

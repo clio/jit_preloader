@@ -7,6 +7,8 @@ class Database
       "CREATE TABLE email_addresses (id INTEGER NOT NULL PRIMARY KEY, contact_id INTEGER NOT NULL, address VARCHAR(255))",
       "CREATE TABLE phone_numbers (id INTEGER NOT NULL PRIMARY KEY, contact_id INTEGER NOT NULL, phone VARCHAR(10))",
       "CREATE TABLE countries (id INTEGER NOT NULL PRIMARY KEY, name VARCHAR(255))",
+      "CREATE TABLE books (id INTEGER NOT NULL PRIMARY KEY, name VARCHAR(255))",
+      "CREATE TABLE sections (id INTEGER NOT NULL PRIMARY KEY, type VARCHAR(255), book_id INTEGER, section_id INTEGER, name VARCHAR(255))",
     ]
   end
 
