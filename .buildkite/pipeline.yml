@@ -1,0 +1,7 @@
+steps:
+  - label: ":rspec: RSpec"
+    command:
+      - "echo '--- :ruby: bundle install'"
+      - bundle install
+      - "echo '--- :rspec: rspec'"
+      - bundle exec rspec
