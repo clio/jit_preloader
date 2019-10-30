@@ -1,17 +1,6 @@
 require 'spec_helper'
 
 RSpec.describe JitPreloader::Preloader do
-
-  let!(:book) { Book.create(name: "Lord of the Rings") }
-
-  let!(:section) { Section.create(name: "Main", book: book) }
-  let!(:sub_section1) { SubSection.create(name: "Chapter 1", section: section) }
-  let!(:sub_section2) { SubSection.create(name: "Chapter 2", section: section) }
-
-  let!(:endorsement) { Endorsement.create(name: "Endorsement", book: book) }
-  let!(:endorsement_section1) { SubSection.create(name: "Endorsement 1", section: endorsement) }
-  let!(:endorsement_section2) { SubSection.create(name: "Endorsement 2", section: endorsement) }
-
   let!(:contact1) do
     addresses = [
       Address.new(street: "123 Fake st", country: canada),
@@ -59,36 +48,48 @@ RSpec.describe JitPreloader::Preloader do
     ->(event, data){ source_map[data[:source]] << data[:association] }
   end
 
-  context "when using sti" do
+  context "for single table inheritance" do
     let!(:contact_book) { ContactBook.create(name: "The Yellow Pages") }
     let!(:contact) { Contact.create(name: "Contact", contact_book: contact_book) }
-    let!(:company) { Company.create(name: "Company", contact_book: contact_book) }
+    let!(:company1) { Company.create(name: "Company1", contact_book: contact_book) }
+    let!(:company2) { Company.create(name: "Company2", contact_book: contact_book) }
     let!(:contact_employee1) { Employee.create(name: "Contact Employee1", contact: contact) }
     let!(:contact_employee2) { Employee.create(name: "Contact Employee2", contact: contact) }
-    let!(:company_employee1) { Employee.create(name: "Company Employee1", contact: company) }
-    let!(:company_employee2) { Employee.create(name: "Company Employee2", contact: company) }
+    let!(:company_employee1) { Employee.create(name: "Company Employee1", contact: company1) }
+    let!(:company_employee2) { Employee.create(name: "Company Employee2", contact: company2) }
     let!(:child1) { Child.create(name: "Child1") }
     let!(:child2) { Child.create(name: "Child2") }
     let!(:child3) { Child.create(name: "Child3") }
     let!(:parent1) { Parent.create(name: "Parent1", contact_book: contact_book, children: [child1, child2]) }
     let!(:parent2) { Parent.create(name: "Parent2", contact_book: contact_book, children: [child2, child3]) }
 
-    it do
-      contact_books = ContactBook.jit_preload.to_a
-      expect(contact_books.first.employees_count).to eq 4
+    context "when preloading an aggregate for a child model" do
+      it "can handle queries" do
+        contact_books = ContactBook.jit_preload.to_a
+        expect(contact_books.first.companies_count).to eq 2
+      end
     end
 
-    it do
-      contact_books = ContactBook.jit_preload.to_a
-      expect(contact_books.first.company_employees_count).to eq 2
+    context "when preloading an aggregate of a child model through its base model" do
+      it "can handle queries" do
+        contact_books = ContactBook.jit_preload.to_a
+        expect(contact_books.first.employees_count).to eq 4
+      end
     end
 
-    it do
-      # This expectation may be wrong... From what I can tell, without the jit_preloader I get 4
-      contact_books = ContactBook.jit_preload.to_a
-      expect(contact_books.first.children.length).to eq 3
-      expect(contact_books.first.children_count).to eq 3
-      expect(contact_books.first.children).to include(child1, child2, child3)
+    context "when preloading an aggregate of a nested child model through another child model" do
+      it "can handle queries" do
+        contact_books = ContactBook.jit_preload.to_a
+        expect(contact_books.first.company_employees_count).to eq 2
+      end
+    end
+
+    context "when preloading an aggregate of a nested child model through a many-to-many relationship with another child model" do
+      it "can handle queries" do
+        contact_books = ContactBook.jit_preload.to_a
+        expect(contact_books.first.children_count).to eq 4
+        expect(contact_books.first.children).to include(child1, child2, child3)
+      end
     end
   end
 
