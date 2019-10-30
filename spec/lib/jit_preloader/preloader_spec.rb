@@ -12,16 +12,6 @@ RSpec.describe JitPreloader::Preloader do
   let!(:endorsement_section1) { SubSection.create(name: "Endorsement 1", section: endorsement) }
   let!(:endorsement_section2) { SubSection.create(name: "Endorsement 2", section: endorsement) }
 
-  it do
-    books = Book.jit_preload.to_a
-    expect(books.first.sub_sections_count).to eq 4
-  end
-
-  it do
-    books = Book.jit_preload.to_a
-    expect(books.first.endorsement_sub_sections_count).to eq 2
-  end
-
   let!(:contact1) do
     addresses = [
       Address.new(street: "123 Fake st", country: canada),
@@ -67,6 +57,39 @@ RSpec.describe JitPreloader::Preloader do
   let(:source_map) { Hash.new{|h,k| h[k]= Array.new } }
   let(:callback) do
     ->(event, data){ source_map[data[:source]] << data[:association] }
+  end
+
+  context "when using sti" do
+    let!(:contact_book) { ContactBook.create(name: "The Yellow Pages") }
+    let!(:contact) { Contact.create(name: "Contact", contact_book: contact_book) }
+    let!(:company) { Company.create(name: "Company", contact_book: contact_book) }
+    let!(:contact_employee1) { Employee.create(name: "Contact Employee1", contact: contact) }
+    let!(:contact_employee2) { Employee.create(name: "Contact Employee2", contact: contact) }
+    let!(:company_employee1) { Employee.create(name: "Company Employee1", contact: company) }
+    let!(:company_employee2) { Employee.create(name: "Company Employee2", contact: company) }
+    let!(:child1) { Child.create(name: "Child1") }
+    let!(:child2) { Child.create(name: "Child2") }
+    let!(:child3) { Child.create(name: "Child3") }
+    let!(:parent1) { Parent.create(name: "Parent1", contact_book: contact_book, children: [child1, child2]) }
+    let!(:parent2) { Parent.create(name: "Parent2", contact_book: contact_book, children: [child2, child3]) }
+
+    it do
+      contact_books = ContactBook.jit_preload.to_a
+      expect(contact_books.first.employees_count).to eq 4
+    end
+
+    it do
+      contact_books = ContactBook.jit_preload.to_a
+      expect(contact_books.first.company_employees_count).to eq 2
+    end
+
+    it do
+      # This expectation may be wrong... From what I can tell, without the jit_preloader I get 4
+      contact_books = ContactBook.jit_preload.to_a
+      expect(contact_books.first.children.length).to eq 3
+      expect(contact_books.first.children_count).to eq 3
+      expect(contact_books.first.children).to include(child1, child2, child3)
+    end
   end
 
   context "when preloading an aggregate as polymorphic" do
