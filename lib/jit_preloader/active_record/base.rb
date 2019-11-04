@@ -49,8 +49,9 @@ module JitPreloadExtension
             # doesn't include results from other child models
             is_base_class = aggregate_association.klass.superclass.abstract_class? || aggregate_association.klass.superclass == ActiveRecord::Base
             has_type_column = aggregate_association.klass.column_names.include?(aggregate_association.klass.inheritance_column)
-            if is_child_sti_model = !is_base_class && has_type_column
-              conditions[table_alias_name].merge!({ type: aggregate_association.klass.sti_name })
+            is_child_sti_model = !is_base_class && has_type_column
+            if is_child_sti_model
+              conditions[table_alias_name].merge!({ aggregate_association.klass.inheritance_column => aggregate_association.klass.sti_name })
             end
 
             if reflection.type.present?
