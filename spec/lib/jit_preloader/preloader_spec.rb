@@ -1,7 +1,6 @@
 require 'spec_helper'
 
 RSpec.describe JitPreloader::Preloader do
-
   let!(:contact1) do
     addresses = [
       Address.new(street: "123 Fake st", country: canada),
@@ -47,6 +46,66 @@ RSpec.describe JitPreloader::Preloader do
   let(:source_map) { Hash.new{|h,k| h[k]= Array.new } }
   let(:callback) do
     ->(event, data){ source_map[data[:source]] << data[:association] }
+  end
+
+  context "for single table inheritance" do
+    context "when preloading an aggregate for a child model" do
+      let!(:contact_book) { ContactBook.create(name: "The Yellow Pages") }
+      let!(:company1) { Company.create(name: "Company1", contact_book: contact_book) }
+      let!(:company2) { Company.create(name: "Company2", contact_book: contact_book) }
+
+      it "can handle queries" do
+        contact_books = ContactBook.jit_preload.to_a
+        expect(contact_books.first.companies_count).to eq 2
+      end
+    end
+
+    context "when preloading an aggregate of a child model through its base model" do
+      let!(:contact_book) { ContactBook.create(name: "The Yellow Pages") }
+      let!(:contact) { Contact.create(name: "Contact", contact_book: contact_book) }
+      let!(:company1) { Company.create(name: "Company1", contact_book: contact_book) }
+      let!(:company2) { Company.create(name: "Company2", contact_book: contact_book) }
+      let!(:contact_employee1) { Employee.create(name: "Contact Employee1", contact: contact) }
+      let!(:contact_employee2) { Employee.create(name: "Contact Employee2", contact: contact) }
+      let!(:company_employee1) { Employee.create(name: "Company Employee1", contact: company1) }
+      let!(:company_employee2) { Employee.create(name: "Company Employee2", contact: company2) }
+
+      it "can handle queries" do
+        contact_books = ContactBook.jit_preload.to_a
+        expect(contact_books.first.employees_count).to eq 4
+      end
+    end
+
+    context "when preloading an aggregate of a nested child model through another child model" do
+      let!(:contact_book) { ContactBook.create(name: "The Yellow Pages") }
+      let!(:contact) { Contact.create(name: "Contact", contact_book: contact_book) }
+      let!(:company1) { Company.create(name: "Company1", contact_book: contact_book) }
+      let!(:company2) { Company.create(name: "Company2", contact_book: contact_book) }
+      let!(:contact_employee1) { Employee.create(name: "Contact Employee1", contact: contact) }
+      let!(:contact_employee2) { Employee.create(name: "Contact Employee2", contact: contact) }
+      let!(:company_employee1) { Employee.create(name: "Company Employee1", contact: company1) }
+      let!(:company_employee2) { Employee.create(name: "Company Employee2", contact: company2) }
+
+      it "can handle queries" do
+        contact_books = ContactBook.jit_preload.to_a
+        expect(contact_books.first.company_employees_count).to eq 2
+      end
+    end
+
+    context "when preloading an aggregate of a nested child model through a many-to-many relationship with another child model" do
+      let!(:contact_book) { ContactBook.create(name: "The Yellow Pages") }
+      let!(:child1) { Child.create(name: "Child1") }
+      let!(:child2) { Child.create(name: "Child2") }
+      let!(:child3) { Child.create(name: "Child3") }
+      let!(:parent1) { Parent.create(name: "Parent1", contact_book: contact_book, children: [child1, child2]) }
+      let!(:parent2) { Parent.create(name: "Parent2", contact_book: contact_book, children: [child2, child3]) }
+
+      it "can handle queries" do
+        contact_books = ContactBook.jit_preload.to_a
+        expect(contact_books.first.children_count).to eq 4
+        expect(contact_books.first.children).to include(child1, child2, child3)
+      end
+    end
   end
 
   context "when preloading an aggregate as polymorphic" do

@@ -41,11 +41,25 @@ module JitPreloadExtension
             association_scope = klass.all.merge(association(assoc).scope).unscope(where: aggregate_association.foreign_key)
             association_scope = association_scope.instance_exec(&reflection.scope).reorder(nil) if reflection.scope
 
-            conditions[aggregate_association.table_name] = { aggregate_association.foreign_key => primary_ids }
+            # If the query uses an alias for the association, use that instead of the table name
+            table_alias_name = association_scope.references_values.first
+            table_reference = table_alias_name || aggregate_association.table_name
+
+            conditions[table_reference] = { aggregate_association.foreign_key => primary_ids }
+
+            # If the association is a STI child model, specify its type in the condition so that it
+            # doesn't include results from other child models
+            parent_is_base_class = aggregate_association.klass.superclass.abstract_class? || aggregate_association.klass.superclass == ActiveRecord::Base
+            has_type_column = aggregate_association.klass.column_names.include?(aggregate_association.klass.inheritance_column)
+            is_child_sti_model = !parent_is_base_class && has_type_column
+            if is_child_sti_model
+              conditions[table_reference].merge!({ aggregate_association.klass.inheritance_column => aggregate_association.klass.sti_name })
+            end
+
             if reflection.type.present?
               conditions[reflection.type] = self.class.name
             end
-            group_by = "#{aggregate_association.table_name}.#{aggregate_association.foreign_key}"
+            group_by = "#{table_reference}.#{aggregate_association.foreign_key}"
 
             preloaded_data = Hash[association_scope
               .where(conditions)
