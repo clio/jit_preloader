@@ -27,7 +27,7 @@ GEM
     i18n (1.6.0)
       concurrent-ruby (~> 1.0)
     minitest (5.11.3)
-    rake (10.5.0)
+    rake (13.0.1)
     rspec (3.5.0)
       rspec-core (~> 3.5.0)
       rspec-expectations (~> 3.5.0)
@@ -54,7 +54,7 @@ DEPENDENCIES
   byebug
   database_cleaner
   jit_preloader!
-  rake (~> 10.0)
+  rake (~> 13.0)
   rspec
   sqlite3
 
