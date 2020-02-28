@@ -22,7 +22,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "activesupport"
 
   spec.add_development_dependency "bundler"
-  spec.add_development_dependency "rake", "~> 10.0"
+  spec.add_development_dependency "rake", "~> 13.0"
   spec.add_development_dependency "rspec"
   spec.add_development_dependency "database_cleaner"
   spec.add_development_dependency "sqlite3"
