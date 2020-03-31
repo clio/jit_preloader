@@ -2,6 +2,7 @@ module JitPreloadExtension
   attr_accessor :jit_preloader
   attr_accessor :jit_n_plus_one_tracking
   attr_accessor :jit_preload_aggregates
+  attr_accessor :jit_preload_scoped_relations
 
   def reload(*args)
     clear_jit_preloader!
@@ -10,10 +11,26 @@ module JitPreloadExtension
 
   def clear_jit_preloader!
     self.jit_preload_aggregates = {}
+    self.jit_preload_scoped_relations = {}
     if jit_preloader
       jit_preloader.records.delete(self)
       self.jit_preloader = nil
     end
+  end
+
+  def preload_scoped_relation(name:, base_association:, preload_scope: nil)
+    return jit_preload_scoped_relations[name] if jit_preload_scoped_relations&.key?(name)
+
+    records = jit_preloader&.records || [self]
+
+    JitPreloader::Preloader.new.preload(
+      name,
+      records,
+      base_association,
+      preload_scope
+    )
+
+    jit_preload_scoped_relations[name]
   end
 
   def self.prepended(base)
