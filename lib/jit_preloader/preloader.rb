@@ -12,38 +12,6 @@ module JitPreloader
       end
     end
 
-    def preload(name, records, associations, preload_scope = nil)
-      wrapped_records       = Array.wrap(records).compact.uniq
-      wrapped_associations  = Array.wrap(associations)
-
-      return if records.empty?
-
-      previous_association_values = Hash.new{|h,k| h[k] = {} }
-      wrapped_associations.flat_map do |association_name|
-        wrapped_records.each do |record|
-          association = record.association(association_name)
-          if association.loaded?
-            previous_association_values[association_name][record] = association.target
-            association.reset
-          end
-        end
-      end
-
-      super(records, associations, preload_scope)
-
-      wrapped_associations.flat_map do |association_name|
-        wrapped_records.each do |record|
-          record.jit_preload_scoped_relations ||= {}
-          association = record.association(association_name)
-          record.jit_preload_scoped_relations[name] = association.target
-          association.reset
-          if previous_association_values[association_name].key?(record)
-            association.target = previous_association_values[association_name][record]
-          end
-        end
-      end
-    end
-
     def jit_preload(association)
       # It is possible that the records array has multiple different classes (think single table inheritance).
       # Thus, it is possible that some of the records don't have an association.
