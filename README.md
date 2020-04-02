@@ -173,6 +173,42 @@ end
 
 ```
 
+### Preloading a subset of an association
+
+There are often times when you want to preload a subset of an association, or change how the SQL statement is generated. For example, if a `Contact` model has
+an `addresses` association, you may want to be able to get all of the addresses that belong to a specific country without introducing an N+1 query.
+This is a method `preload_scoped_relation` that is available that can handle this for you.
+
+```ruby
+#old
+class Contact < ActiveRecord::Base
+  has_many :addresses
+  has_many :usa_addresses, ->{ where(country: Country.find_by_name("USA")) }
+end
+
+Contact.jit_preload.all.each do |contact|
+  # This will preload the association as expected, but it must be defined as an association in advance
+  contact.usa_addresses
+
+  # This will preload as the entire addresses association, and filters it in memory
+  contact.addresses.select{|address| address.country == Country.find_by_name("USA") }
+
+  # This is an N+1 query
+  contact.addresses.where(country: Country.find_by_name("USA"))
+end
+
+# New
+Contact.jit_preload.all.each do |contact|
+  contact.preload_scoped_relation(
+    name: "USA Addresses",
+    base_association: :addresses,
+    preload_scope: Address.where(country: Country.find_by_name("USA"))
+  )
+end
+# SELECT * FROM contacts
+# SELECT * FROM countries WHERE name = "USA" LIMIT 1
+# SELECT "addresses".* FROM "addresses" WHERE "addresses"."country_id" = 10 AND "addresses"."contact_id" IN (1, 2, 3, ...)
+
 ### Jit preloading globally across your application
 
 The JitPreloader can be globally enabled, in which case most N+1 queries in your app should just disappear. It is off by default.
@@ -201,7 +237,7 @@ This is mostly a magic bullet, but it doesn't solve all database-related problem
 ```ruby
 Contact.all.each do |contact|
   contact.emails.reload                         # Reloading the association
-  contact.addresses.where(billing: true).to_a   # Querying the association
+  contact.addresses.where(billing: true).to_a   # Querying the association (Use: preload_scoped_relation to avoid these)
 end
 ```
 
