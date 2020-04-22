@@ -208,6 +208,7 @@ end
 # SELECT * FROM contacts
 # SELECT * FROM countries WHERE name = "USA" LIMIT 1
 # SELECT "addresses".* FROM "addresses" WHERE "addresses"."country_id" = 10 AND "addresses"."contact_id" IN (1, 2, 3, ...)
+```
 
 ### Jit preloading globally across your application
 
