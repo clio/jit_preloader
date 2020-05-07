@@ -55,7 +55,7 @@ module JitPreloadExtension
     class << base
       delegate :jit_preload, to: :all
 
-      def has_many_aggregate(assoc, name, aggregate, field, default: 0)
+      def has_many_aggregate(assoc, name, aggregate, field, table_alias_name: nil, default: 0)
         method_name = "#{assoc}_#{name}"
 
         define_method(method_name) do |conditions={}|
@@ -77,8 +77,8 @@ module JitPreloadExtension
             association_scope = association_scope.instance_exec(&reflection.scope).reorder(nil) if reflection.scope
 
             # If the query uses an alias for the association, use that instead of the table name
-            table_alias_name = association_scope.references_values.first
-            table_reference = table_alias_name || aggregate_association.table_name
+            table_reference = table_alias_name
+            table_reference ||= association_scope.references_values.first || aggregate_association.table_name
 
             conditions[table_reference] = { aggregate_association.foreign_key => primary_ids }
 

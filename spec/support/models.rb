@@ -12,6 +12,9 @@ class ContactBook < ActiveRecord::Base
   has_many_aggregate :employees, :count, :count, "*"
   has_many_aggregate :company_employees, :count, :count, "*"
   has_many_aggregate :children, :count, :count, "*"
+
+  has_many :companies_with_blank_email_address, -> { joins(:email_address).where(email_addresses: { address: "" }) }, class_name: "Company"
+  has_many_aggregate :companies_with_blank_email_address, :count, :count, "*", table_alias_name: "contacts"
 end
 
 class Contact < ActiveRecord::Base

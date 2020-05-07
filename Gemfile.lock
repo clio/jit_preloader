@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    jit_preloader (0.2.3)
+    jit_preloader (0.2.5)
       activerecord (> 4.2, < 6)
       activesupport
 
@@ -63,4 +63,4 @@ DEPENDENCIES
   sqlite3
 
 BUNDLED WITH
-   2.0.1
+   2.1.4

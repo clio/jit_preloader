@@ -106,6 +106,19 @@ RSpec.describe JitPreloader::Preloader do
         expect(contact_books.first.children).to include(child1, child2, child3)
       end
     end
+
+    context "when preloading an aggregate for a child model scoped by another join table" do
+      let!(:contact_book) { ContactBook.create(name: "The Yellow Pages") }
+      let!(:contact1) { Company.create(name: "Without Email", contact_book: contact_book) }
+      let!(:contact2) { Company.create(name: "With Blank Email", email_address: EmailAddress.new(address: ""), contact_book: contact_book) }
+      let!(:contact3) { Company.create(name: "With Email", email_address: EmailAddress.new(address: "a@a.com"), contact_book: contact_book) }
+
+      it "can handle queries" do
+        contact_books = ContactBook.jit_preload.to_a
+        expect(contact_books.first.companies_with_blank_email_address_count).to eq 1
+        expect(contact_books.first.companies_with_blank_email_address).to eq [contact2]
+      end
+    end
   end
 
   context "when preloading an aggregate as polymorphic" do
