@@ -9,7 +9,7 @@ require 'jit_preloader/active_record/relation'
 require 'jit_preloader/active_record/associations/collection_association'
 require 'jit_preloader/active_record/associations/singular_association'
 if Gem::Version.new(ActiveRecord::VERSION::STRING) >= Gem::Version.new("6.0.0")
-  require 'jit_preloader/active_record/associations/preloader/association'
+  require 'jit_preloader/active_record/associations/preloader/ar6_association'
 elsif Gem::Version.new(ActiveRecord::VERSION::STRING) >= Gem::Version.new("5.2.2")
   require 'jit_preloader/active_record/associations/preloader/ar5_association'
 else
