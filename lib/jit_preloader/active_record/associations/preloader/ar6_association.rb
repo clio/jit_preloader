@@ -22,7 +22,7 @@ module JitPreloader
       all_records = []
 
       owners.each do |owner|
-        owned_records = records_by_owner[owner] || []
+        owned_records = records_by_owner[owner]&.uniq || []
         all_records.concat(Array(owned_records)) if owner.jit_preloader || JitPreloader.globally_enabled?
         associate_records_to_owner(owner, owned_records)
       end
