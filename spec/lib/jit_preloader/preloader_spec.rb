@@ -439,4 +439,23 @@ RSpec.describe JitPreloader::Preloader do
     end
   end
 
+  context "duplicate records" do
+    let!(:contact1) { Contact.new(name: "1 contact, 1 phone number", phone_numbers: [phone_number]) }
+    let!(:contact2) { nil }
+    let!(:contact3) { nil }
+    let!(:contact_owner) { nil }
+
+    let(:phone_number) { PhoneNumber.new(phone: "123") }
+    let!(:email_adresses) do
+      [
+        EmailAddress.create!(address: "woot@woot.com", contact: contact1),
+        EmailAddress.create!(address: "a@a.com", contact: contact1),
+      ]
+    end
+
+    it "does not assign duplicate records" do
+      expect(EmailAddress.jit_preload.to_a.map{|e| e.contact.phone_numbers.length }).to eql([1, 1])
+    end
+  end
+
 end
