@@ -18,37 +18,59 @@ module JitPreloadExtension
     end
   end
 
-  def preload_scoped_relation(name:, base_association:, preload_scope: nil)
-    return jit_preload_scoped_relations[name] if jit_preload_scoped_relations&.key?(name)
+  if Gem::Version.new(ActiveRecord::VERSION::STRING) >= Gem::Version.new("6.0.0")
+    def preload_scoped_relation(name:, base_association:, preload_scope: nil)
+      return jit_preload_scoped_relations[name] if jit_preload_scoped_relations&.key?(name)
 
-    records = jit_preloader&.records || [self]
-    previous_association_values = {}
+      records = jit_preloader&.records || [self]
 
-    records.each do |record|
-      association = record.association(base_association)
-      if association.loaded?
-        previous_association_values[record] = association.target
+      preloader_assocaition = ActiveRecord::Associations::Preloader.new.preload(
+        records,
+        base_association,
+        preload_scope
+      ).first
+
+      records.each do |record|
+        record.jit_preload_scoped_relations ||= {}
+        association = record.association(base_association)
+        record.jit_preload_scoped_relations[name] = preloader_assocaition.records_by_owner[record]
+      end
+
+      jit_preload_scoped_relations[name]
+    end
+  else
+    def preload_scoped_relation(name:, base_association:, preload_scope: nil)
+      return jit_preload_scoped_relations[name] if jit_preload_scoped_relations&.key?(name)
+
+      records = jit_preloader&.records || [self]
+      previous_association_values = {}
+
+      records.each do |record|
+        association = record.association(base_association)
+        if association.loaded?
+          previous_association_values[record] = association.target
+          association.reset
+        end
+      end
+
+      ActiveRecord::Associations::Preloader.new.preload(
+        records,
+        base_association,
+        preload_scope
+      )
+
+      records.each do |record|
+        record.jit_preload_scoped_relations ||= {}
+        association = record.association(base_association)
+        record.jit_preload_scoped_relations[name] = association.target
         association.reset
+        if previous_association_values.key?(record)
+          association.target = previous_association_values[record]
+        end
       end
+
+      jit_preload_scoped_relations[name]
     end
-
-    ActiveRecord::Associations::Preloader.new.preload(
-      records,
-      base_association,
-      preload_scope
-    )
-
-    records.each do |record|
-      record.jit_preload_scoped_relations ||= {}
-      association = record.association(base_association)
-      record.jit_preload_scoped_relations[name] = association.target
-      association.reset
-      if previous_association_values.key?(record)
-        association.target = previous_association_values[record]
-      end
-    end
-
-    jit_preload_scoped_relations[name]
   end
 
   def self.prepended(base)
