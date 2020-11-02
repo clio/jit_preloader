@@ -24,7 +24,7 @@ module JitPreloadExtension
 
       records = jit_preloader&.records || [self]
 
-      preloader_assocaition = ActiveRecord::Associations::Preloader.new.preload(
+      preloader_association = ActiveRecord::Associations::Preloader.new.preload(
         records,
         base_association,
         preload_scope
@@ -33,7 +33,7 @@ module JitPreloadExtension
       records.each do |record|
         record.jit_preload_scoped_relations ||= {}
         association = record.association(base_association)
-        record.jit_preload_scoped_relations[name] = preloader_assocaition.records_by_owner[record]
+        record.jit_preload_scoped_relations[name] = preloader_association.records_by_owner[record]
       end
 
       jit_preload_scoped_relations[name]
