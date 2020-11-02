@@ -18,7 +18,7 @@ module JitPreloader
     # end
 
     def run(preloader)
-      super do
+      super.tap do
         if preloaded_records.any?
           JitPreloader::Preloader.attach(preloaded_records) if owners.any?(&:jit_preloader) || JitPreloader.globally_enabled?
         end
