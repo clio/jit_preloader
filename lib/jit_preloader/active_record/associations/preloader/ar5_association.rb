@@ -18,20 +18,11 @@ module JitPreloader
     # end
 
     def run(preloader)
-      all_records = []
-      records = load_records do |record|
-        owner = owners_by_key[convert_key(record[association_key_name])]
-        association = owner.association(reflection.name)
-        association.set_inverse_instance(record)
+      super.tap do
+        if preloaded_records.any? && preloaded_records.none?(&:jit_preloader)
+          JitPreloader::Preloader.attach(preloaded_records) if owners.any?(&:jit_preloader) || JitPreloader.globally_enabled?
+        end
       end
-
-      owners.each do |owner|
-        owned_records = records[convert_key(owner[owner_key_name])] || []
-        all_records.concat(Array(owned_records)) if owner.jit_preloader || JitPreloader.globally_enabled?
-        associate_records_to_owner(owner, owned_records)
-      end
-
-      JitPreloader::Preloader.attach(all_records) if all_records.any?
     end
 
     # Original method:
@@ -54,6 +45,7 @@ module JitPreloader
         # the original copy so that we don't blow away in-memory changes.
         new_records = association.target.any? ? records - association.target : records
         association.target.concat(new_records)
+        association.loaded!
       else
         association.target ||= records.first unless records.empty?
       end
@@ -69,3 +61,4 @@ module JitPreloader
 end
 
 ActiveRecord::Associations::Preloader::Association.prepend(JitPreloader::PreloaderAssociation)
+ActiveRecord::Associations::Preloader::ThroughAssociation.prepend(JitPreloader::PreloaderAssociation)
