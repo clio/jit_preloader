@@ -44,7 +44,8 @@ module JitPreloader
         # We don't want to duplicate them, but we also want to preserve
         # the original copy so that we don't blow away in-memory changes.
         new_records = association.target.any? ? records - association.target : records
-        association.target = association.target.concat(new_records)
+        association.target.concat(new_records)
+        association.loaded!
       else
         association.target ||= records.first unless records.empty?
       end

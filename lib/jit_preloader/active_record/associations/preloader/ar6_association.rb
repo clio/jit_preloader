@@ -36,7 +36,8 @@ module JitPreloader
       association = owner.association(reflection.name)
       if reflection.collection?
         new_records = association.target.any? ? records - association.target : records
-        association.target = association.target.concat(new_records)
+        association.target.concat(new_records)
+        association.loaded!
       else
         association.target = records.first
       end
