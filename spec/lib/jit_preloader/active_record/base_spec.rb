@@ -44,6 +44,14 @@ RSpec.describe "ActiveRecord::Base Extensions" do
       end.to make_database_queries(count: 1)
     end
 
+    context "with newly created records" do
+      it "ignores new records in scope" do
+        contact = Contact.first
+        new_address = contact.addresses.create!(street: "123 Friendly St.", country: canada)
+        expect(call(contact)).not_to include(new_address)
+      end
+    end
+
     context "when reloading the object" do
       it "clears the memoization" do
         contacts = Contact.jit_preload.limit(2).to_a
