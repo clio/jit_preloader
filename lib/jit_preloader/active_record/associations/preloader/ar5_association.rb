@@ -18,6 +18,8 @@ module JitPreloader
     # end
 
     def run(preloader)
+      return unless (reflection.scope.nil? || reflection.scope.arity == 0) && klass.ancestors.include?(ActiveRecord::Base)
+
       super.tap do
         if preloaded_records.any? && preloaded_records.none?(&:jit_preloader)
           JitPreloader::Preloader.attach(preloaded_records) if owners.any?(&:jit_preloader) || JitPreloader.globally_enabled?
