@@ -1,4 +1,4 @@
-require 'spec_helper'
+require "spec_helper"
 
 RSpec.describe JitPreloader::Preloader do
   let!(:contact1) do
@@ -152,6 +152,16 @@ RSpec.describe JitPreloader::Preloader do
       it "can handle queries" do
         ContactOwner.jit_preload.each_with_index do |c, i|
           expect(c.contacts_count).to eql contact_owner_counts[i]
+        end
+      end
+
+      context "when a record has a polymorphic association type that's not an ActiveRecord" do
+        before do
+          contact1.update!(contact_owner_type: "NilClass", contact_owner_id: nil)
+        end
+
+        it "doesn't die while trying to load the association" do
+          expect(Contact.jit_preload.map(&:contact_owner)).to eq [nil, ContactOwner.first, Address.first]
         end
       end
     end
