@@ -1,5 +1,6 @@
 class ContactBook < ActiveRecord::Base
   has_many :contacts
+  has_many :contacts_with_scope, ->(_contact_book) { desc }, class_name: "Contact", foreign_key: :contact_book_id
   has_many :employees, through: :contacts
 
   has_many :companies
@@ -29,6 +30,8 @@ class Contact < ActiveRecord::Base
   has_many_aggregate :addresses, :max_street_length, :maximum, "LENGTH(street)"
   has_many_aggregate :phone_numbers, :count, :count, "id"
   has_many_aggregate :addresses, :count, :count, "*"
+
+  scope :desc, ->{ order(id: :desc) }
 end
 
 class Company < Contact
