@@ -202,6 +202,22 @@ RSpec.describe JitPreloader::Preloader do
     end
   end
 
+  context "when accessing an association with a scope that has a parameter" do
+    let!(:contact_book) { ContactBook.create(name: "The Yellow Pages") }
+    let!(:contact) { Contact.create(name: "Contact", contact_book: contact_book) }
+    let!(:company1) { Company.create(name: "Company1", contact_book: contact_book) }
+
+    it "is unable to be preloaded" do
+      ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
+        ContactBook.all.jit_preload.each do |contact_book|
+          expect(contact_book.contacts_with_scope.to_a).to eql [company1, contact]
+        end
+      end
+
+      expect(source_map).to eql(Hash[contact_book, [:contacts_with_scope]])
+    end
+  end
+
   context "when preloading an aggregate on a polymorphic has_many through relationship" do
     let(:contact_owner_addresses_counts) { [3] }
 
