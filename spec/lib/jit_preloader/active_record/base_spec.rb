@@ -90,5 +90,18 @@ RSpec.describe "ActiveRecord::Base Extensions" do
         expect(contacts.last.association(:addresses)).to be_loaded
       end
     end
+
+    context "when no records exist for the association" do
+      let!(:record) { Parent.create }
+
+      it "returns an empty array" do
+        value = record.preload_scoped_relation(
+          name: "Parent Children",
+          base_association: :parents_child
+        )
+
+        expect(value).to eq([])
+      end
+    end
   end
 end
