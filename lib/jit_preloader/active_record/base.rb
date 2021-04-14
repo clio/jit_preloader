@@ -47,7 +47,7 @@ module JitPreloadExtension
 
       records.each do |record|
         association = record.association(base_association)
-        if association.loaded?
+        if association.loaded? || association.target.any?
           previous_association_values[record] = association.target
           association.reset
         end
