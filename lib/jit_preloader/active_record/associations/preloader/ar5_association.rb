@@ -49,7 +49,7 @@ module JitPreloader
         association.target.concat(new_records)
         association.loaded!
       else
-        association.target ||= records.first unless records.empty?
+        association.target = records.first unless records.empty?
       end
     end
 
