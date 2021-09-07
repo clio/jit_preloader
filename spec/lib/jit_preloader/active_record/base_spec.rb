@@ -74,6 +74,9 @@ RSpec.describe "ActiveRecord::Base Extensions" do
 
     it "doesn't load the value into the association" do
       contacts = Contact.jit_preload.limit(2).to_a
+      expect(contacts.first.association(:addresses)).to_not be_loaded
+      expect(contacts.last.association(:addresses)).to_not be_loaded
+
       call(contacts.first)
 
       expect(contacts.first.association(:addresses)).to_not be_loaded

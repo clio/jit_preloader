@@ -288,6 +288,22 @@ RSpec.describe JitPreloader::Preloader do
     end
   end
 
+  context "when a singular association id changes after preload" do
+    let!(:contact_book1) { ContactBook.create(name: "The Yellow Pages") }
+    let!(:contact_book2) { ContactBook.create(name: "The White Pages") }
+    let!(:company1) { Company.create(name: "Company1", contact_book: contact_book1) }
+    let!(:company2) { Company.create(name: "Company2", contact_book: contact_book1) }
+
+    it "allows the association to be reloaded" do
+      companies = Company.where(id: [company1.id, company2.id]).jit_preload.all.to_a
+      expect(companies.map(&:contact_book)).to match_array [contact_book1, contact_book1]
+
+      company = companies.each {|c| c.contact_book_id = contact_book2.id }
+
+      expect(companies.map(&:contact_book)).to match_array [contact_book2, contact_book2]
+    end
+  end
+
   context "when preloading an aggregate" do
     let(:addresses_counts) { [3, 0, 2] }
     let(:phone_number_counts) { [2, 0, 1] }
