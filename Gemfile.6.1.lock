@@ -54,10 +54,11 @@ GEM
     zeitwerk (2.4.2)
 
 PLATFORMS
+  ruby
   x86_64-darwin-19
 
 DEPENDENCIES
-  activerecord (~> 6.1.0)
+  activerecord (~> 6.1)
   bundler
   byebug
   database_cleaner
