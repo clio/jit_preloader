@@ -1,0 +1,3 @@
+# Own any files in the .github/workflows directory and any of its
+# subdirectories.
+/.github/workflows/ @clio/application-security @clio/penguins
