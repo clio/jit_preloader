@@ -4,7 +4,7 @@ module JitPreloader
     attr_accessor :records
 
     def self.attach(records)
-      new(records: records.dup).tap do |loader|
+      new(records: records.dup, associations: nil).tap do |loader|
         records.each do |record|
           record.jit_preloader = loader
         end
