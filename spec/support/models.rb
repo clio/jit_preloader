@@ -73,9 +73,11 @@ class Country < ActiveRecord::Base
   has_many :addresses
   has_many :contacts, through: :addresses
   has_many :contact_owners, through: :contacts, source_type: 'ContactOwner'
+  has_many :addresses_for_test, -> { joins(:contact).where(contact: { name: 'Test' }) }, class_name: 'Address', foreign_key: 'country_id'
 
   has_many_aggregate :contacts, :count, :count, "*"
   has_many_aggregate :contact_owners, :count, :count, "*"
+  has_many_aggregate :addresses_for_test, :count, :count, "*"
 end
 
 class ContactOwner < ActiveRecord::Base

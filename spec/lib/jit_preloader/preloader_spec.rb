@@ -218,6 +218,19 @@ RSpec.describe JitPreloader::Preloader do
     end
   end
 
+  context "when accessing an association with an additional joins in the scope" do
+    let!(:contact1) { Contact.create(name: "Test") }
+    let!(:contact2) { Contact.create(name: "Contact2") }
+    let!(:address1) { Address.create(street: "123 Fake st", country: canada, contact: contact1) }
+    let!(:address2) { Address.create(street: "123 Fake st 2", country: usa, contact: contact2) }
+
+    it "can handle queries" do
+      countries = Country.all.jit_preload.to_a
+      expect(countries.first.addresses_for_test_count).to eq 1
+    end
+  end
+
+
   context "when preloading an aggregate on a polymorphic has_many through relationship" do
     let(:contact_owner_addresses_counts) { [3] }
 
