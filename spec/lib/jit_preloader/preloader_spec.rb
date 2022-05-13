@@ -1,7 +1,6 @@
-require 'spec_helper'
+require "spec_helper"
 
 RSpec.describe JitPreloader::Preloader do
-
   let!(:contact1) do
     addresses = [
       Address.new(street: "123 Fake st", country: canada),
@@ -49,6 +48,79 @@ RSpec.describe JitPreloader::Preloader do
     ->(event, data){ source_map[data[:source]] << data[:association] }
   end
 
+  context "for single table inheritance" do
+    context "when preloading an aggregate for a child model" do
+      let!(:contact_book) { ContactBook.create(name: "The Yellow Pages") }
+      let!(:company1) { Company.create(name: "Company1", contact_book: contact_book) }
+      let!(:company2) { Company.create(name: "Company2", contact_book: contact_book) }
+
+      it "can handle queries" do
+        contact_books = ContactBook.jit_preload.to_a
+        expect(contact_books.first.companies_count).to eq 2
+      end
+    end
+
+    context "when preloading an aggregate of a child model through its base model" do
+      let!(:contact_book) { ContactBook.create(name: "The Yellow Pages") }
+      let!(:contact) { Contact.create(name: "Contact", contact_book: contact_book) }
+      let!(:company1) { Company.create(name: "Company1", contact_book: contact_book) }
+      let!(:company2) { Company.create(name: "Company2", contact_book: contact_book) }
+      let!(:contact_employee1) { Employee.create(name: "Contact Employee1", contact: contact) }
+      let!(:contact_employee2) { Employee.create(name: "Contact Employee2", contact: contact) }
+      let!(:company_employee1) { Employee.create(name: "Company Employee1", contact: company1) }
+      let!(:company_employee2) { Employee.create(name: "Company Employee2", contact: company2) }
+
+      it "can handle queries" do
+        contact_books = ContactBook.jit_preload.to_a
+        expect(contact_books.first.employees_count).to eq 4
+      end
+    end
+
+    context "when preloading an aggregate of a nested child model through another child model" do
+      let!(:contact_book) { ContactBook.create(name: "The Yellow Pages") }
+      let!(:contact) { Contact.create(name: "Contact", contact_book: contact_book) }
+      let!(:company1) { Company.create(name: "Company1", contact_book: contact_book) }
+      let!(:company2) { Company.create(name: "Company2", contact_book: contact_book) }
+      let!(:contact_employee1) { Employee.create(name: "Contact Employee1", contact: contact) }
+      let!(:contact_employee2) { Employee.create(name: "Contact Employee2", contact: contact) }
+      let!(:company_employee1) { Employee.create(name: "Company Employee1", contact: company1) }
+      let!(:company_employee2) { Employee.create(name: "Company Employee2", contact: company2) }
+
+      it "can handle queries" do
+        contact_books = ContactBook.jit_preload.to_a
+        expect(contact_books.first.company_employees_count).to eq 2
+      end
+    end
+
+    context "when preloading an aggregate of a nested child model through a many-to-many relationship with another child model" do
+      let!(:contact_book) { ContactBook.create(name: "The Yellow Pages") }
+      let!(:child1) { Child.create(name: "Child1") }
+      let!(:child2) { Child.create(name: "Child2") }
+      let!(:child3) { Child.create(name: "Child3") }
+      let!(:parent1) { Parent.create(name: "Parent1", contact_book: contact_book, children: [child1, child2]) }
+      let!(:parent2) { Parent.create(name: "Parent2", contact_book: contact_book, children: [child2, child3]) }
+
+      it "can handle queries" do
+        contact_books = ContactBook.jit_preload.to_a
+        expect(contact_books.first.children_count).to eq 4
+        expect(contact_books.first.children).to include(child1, child2, child3)
+      end
+    end
+
+    context "when preloading an aggregate for a child model scoped by another join table" do
+      let!(:contact_book) { ContactBook.create(name: "The Yellow Pages") }
+      let!(:contact1) { Company.create(name: "Without Email", contact_book: contact_book) }
+      let!(:contact2) { Company.create(name: "With Blank Email", email_address: EmailAddress.new(address: ""), contact_book: contact_book) }
+      let!(:contact3) { Company.create(name: "With Email", email_address: EmailAddress.new(address: "a@a.com"), contact_book: contact_book) }
+
+      it "can handle queries" do
+        contact_books = ContactBook.jit_preload.to_a
+        expect(contact_books.first.companies_with_blank_email_address_count).to eq 1
+        expect(contact_books.first.companies_with_blank_email_address).to eq [contact2]
+      end
+    end
+  end
+
   context "when preloading an aggregate as polymorphic" do
     let(:contact_owner_counts) { [2] }
 
@@ -80,6 +152,16 @@ RSpec.describe JitPreloader::Preloader do
       it "can handle queries" do
         ContactOwner.jit_preload.each_with_index do |c, i|
           expect(c.contacts_count).to eql contact_owner_counts[i]
+        end
+      end
+
+      context "when a record has a polymorphic association type that's not an ActiveRecord" do
+        before do
+          contact1.update!(contact_owner_type: "NilClass", contact_owner_id: nil)
+        end
+
+        it "doesn't die while trying to load the association" do
+          expect(Contact.jit_preload.map(&:contact_owner)).to eq [nil, ContactOwner.first, Address.first]
         end
       end
     end
@@ -117,6 +199,22 @@ RSpec.describe JitPreloader::Preloader do
           expect(c.contacts_count).to eql country_contacts_counts[i]
         end
       end
+    end
+  end
+
+  context "when accessing an association with a scope that has a parameter" do
+    let!(:contact_book) { ContactBook.create(name: "The Yellow Pages") }
+    let!(:contact) { Contact.create(name: "Contact", contact_book: contact_book) }
+    let!(:company1) { Company.create(name: "Company1", contact_book: contact_book) }
+
+    it "is unable to be preloaded" do
+      ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
+        ContactBook.all.jit_preload.each do |contact_book|
+          expect(contact_book.contacts_with_scope.to_a).to eql [company1, contact]
+        end
+      end
+
+      expect(source_map).to eql(Hash[contact_book, [:contacts_with_scope]])
     end
   end
 
@@ -187,6 +285,22 @@ RSpec.describe JitPreloader::Preloader do
           expect(c.contact_owners_count).to eql contact_owner_counts[i]
         end
       end
+    end
+  end
+
+  context "when a singular association id changes after preload" do
+    let!(:contact_book1) { ContactBook.create(name: "The Yellow Pages") }
+    let!(:contact_book2) { ContactBook.create(name: "The White Pages") }
+    let!(:company1) { Company.create(name: "Company1", contact_book: contact_book1) }
+    let!(:company2) { Company.create(name: "Company2", contact_book: contact_book1) }
+
+    it "allows the association to be reloaded" do
+      companies = Company.where(id: [company1.id, company2.id]).jit_preload.all.to_a
+      expect(companies.map(&:contact_book)).to match_array [contact_book1, contact_book1]
+
+      company = companies.each {|c| c.contact_book_id = contact_book2.id }
+
+      expect(companies.map(&:contact_book)).to match_array [contact_book2, contact_book2]
     end
   end
 

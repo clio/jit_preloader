@@ -4,19 +4,18 @@ module JitPreloader
     attr_accessor :records
 
     def self.attach(records)
-      new.tap do |loader|
-        loader.records = records.dup
+      new(records: records.dup, associations: nil).tap do |loader|
         records.each do |record|
           record.jit_preloader = loader
         end
       end
     end
 
-    def jit_preload(association)
+    def jit_preload(associations)
       # It is possible that the records array has multiple different classes (think single table inheritance).
       # Thus, it is possible that some of the records don't have an association.
-      records_with_association = records.reject{|r| r.class.reflect_on_association(association).nil? }
-      preload records_with_association, association
+      records_with_association = records.reject{|r| r.class.reflect_on_association(associations).nil? }
+      self.class.new(records: records_with_association, associations: associations).call
     end
 
     # We do not want the jit_preloader to be dumpable

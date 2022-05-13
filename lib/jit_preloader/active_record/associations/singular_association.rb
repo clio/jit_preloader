@@ -4,7 +4,7 @@ module JitPreloader
     def load_target
       was_loaded = loaded?
 
-      if !loaded? && owner.persisted? && owner.jit_preloader
+      if !loaded? && owner.persisted? && owner.jit_preloader && (reflection.scope.nil? || reflection.scope.arity == 0)
         owner.jit_preloader.jit_preload(reflection.name)
       end
 
