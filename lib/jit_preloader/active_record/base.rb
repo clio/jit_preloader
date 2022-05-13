@@ -33,11 +33,11 @@ module JitPreloadExtension
         end
       end
 
-      preloader_association = ActiveRecord::Associations::Preloader.new.preload(
-        records,
-        base_association,
-        preload_scope
-      ).first
+      preloader_association = ActiveRecord::Associations::Preloader.new(
+        records: records,
+        associations: base_association,
+        scope: preload_scope
+      ).call.first
 
       records.each do |record|
         record.jit_preload_scoped_relations ||= {}
