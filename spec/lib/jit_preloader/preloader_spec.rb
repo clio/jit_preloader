@@ -340,6 +340,13 @@ RSpec.describe JitPreloader::Preloader do
         expect(source_map).to eql({})
       end
 
+      it "does NOT include ORDER BY in query" do
+        Contact.jit_preload.each do |c|
+          expect { c.addresses_count }.to_not make_database_queries(matching: 'ORDER BY')
+          expect { c.addresses_with_scope_count }.to_not make_database_queries(matching: 'ORDER BY')
+        end
+      end
+
       it "can handle dynamic queries" do
         Contact.jit_preload.each_with_index do |c, i|
           expect(c.addresses_count(country: usa)).to eql usa_addresses_counts[i]
