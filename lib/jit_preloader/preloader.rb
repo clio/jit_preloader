@@ -15,7 +15,11 @@ module JitPreloader
       # It is possible that the records array has multiple different classes (think single table inheritance).
       # Thus, it is possible that some of the records don't have an association.
       records_with_association = records.reject{|r| r.class.reflect_on_association(associations).nil? }
-      self.class.new(records: records_with_association, associations: associations).call
+
+      # Some of the records may already have the association loaded and we should not load them again
+      records_requiring_loading = records_with_association.select{|r| !r.association(associations).loaded? }
+
+      self.class.new(records: records_requiring_loading, associations: associations).call
     end
 
     # We do not want the jit_preloader to be dumpable
