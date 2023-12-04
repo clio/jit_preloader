@@ -109,7 +109,7 @@ module JitPreloadExtension
             end
 
             association_scope = klass.all.merge(association(assoc).scope).unscope(where: aggregate_association.foreign_key)
-            association_scope = association_scope.instance_exec(&reflection.scope).reorder(nil) if reflection.scope
+            association_scope = association_scope.instance_exec(&reflection.scope) if reflection.scope
 
             # If the query uses an alias for the association, use that instead of the table name
             table_reference = table_alias_name
@@ -134,6 +134,7 @@ module JitPreloadExtension
             preloaded_data = Hash[association_scope
               .where(conditions)
               .group(group_by)
+              .reorder(nil)
               .send(aggregate, field)
             ]
 

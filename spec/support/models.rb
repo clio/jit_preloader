@@ -23,6 +23,7 @@ class Contact < ActiveRecord::Base
   belongs_to :contact_owner, polymorphic: true
 
   has_many :addresses
+  has_many :addresses_with_scope, -> { desc }, class_name: "Address"
   has_many :phone_numbers
   has_one :email_address
   has_many :employees
@@ -30,6 +31,7 @@ class Contact < ActiveRecord::Base
   has_many_aggregate :addresses, :max_street_length, :maximum, "LENGTH(street)"
   has_many_aggregate :phone_numbers, :count, :count, "id"
   has_many_aggregate :addresses, :count, :count, "*"
+  has_many_aggregate :addresses_with_scope, :count, :count, "*"
 
   scope :desc, ->{ order(id: :desc) }
 end
@@ -57,8 +59,12 @@ class Child < Contact
 end
 
 class Address < ActiveRecord::Base
+  default_scope { order(id: :asc) }
+
   belongs_to :contact
   belongs_to :country
+
+  scope :desc, ->{ reorder(id: :desc) }
 end
 
 class EmailAddress < ActiveRecord::Base
