@@ -90,7 +90,7 @@ module JitPreloadExtension
     class << base
       delegate :jit_preload, to: :all
 
-      def has_many_aggregate(assoc, name, aggregate, field, table_alias_name: nil, default: 0)
+      def has_many_aggregate(assoc, name, aggregate, field, table_alias_name: nil, default: 0, max_ids_per_query: nil)
         method_name = "#{assoc}_#{name}"
 
         define_method(method_name) do |conditions={}|
@@ -101,6 +101,13 @@ module JitPreloadExtension
           if jit_preloader
             reflection = association(assoc).reflection
             primary_ids = jit_preloader.records.collect{|r| r[reflection.active_record_primary_key] }
+            max_ids_per_query = max_ids_per_query || JitPreloader.max_ids_per_query
+            if max_ids_per_query
+              slices = primary_ids.each_slice(max_ids_per_query)
+            else
+              slices = [primary_ids]
+            end
+
             klass = reflection.klass
 
             aggregate_association = reflection
@@ -115,15 +122,13 @@ module JitPreloadExtension
             table_reference = table_alias_name
             table_reference ||= association_scope.references_values.first || aggregate_association.table_name
 
-            conditions[table_reference] = { aggregate_association.foreign_key => primary_ids }
-
             # If the association is a STI child model, specify its type in the condition so that it
             # doesn't include results from other child models
             parent_is_base_class = aggregate_association.klass.superclass.abstract_class? || aggregate_association.klass.superclass == ActiveRecord::Base
             has_type_column = aggregate_association.klass.column_names.include?(aggregate_association.klass.inheritance_column)
             is_child_sti_model = !parent_is_base_class && has_type_column
             if is_child_sti_model
-              conditions[table_reference].merge!({ aggregate_association.klass.inheritance_column => aggregate_association.klass.sti_name })
+              conditions[table_reference] = { aggregate_association.klass.inheritance_column => aggregate_association.klass.sti_name }
             end
 
             if reflection.type.present?
@@ -131,11 +136,15 @@ module JitPreloadExtension
             end
             group_by = "#{table_reference}.#{aggregate_association.foreign_key}"
 
-            preloaded_data = Hash[association_scope
-              .where(conditions)
-              .group(group_by)
-              .send(aggregate, field)
-            ]
+            preloaded_data = {}
+            slices.each do |slice|
+              data = Hash[association_scope
+                            .where(conditions.deep_merge(table_reference => { aggregate_association.foreign_key => slice }))
+                            .group(group_by)
+                            .send(aggregate, field)
+              ]
+              preloaded_data.merge!(data)
+            end
 
             jit_preloader.records.each do |record|
               record.jit_preload_aggregates ||= {}

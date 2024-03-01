@@ -1,4 +1,5 @@
 require "spec_helper"
+require "db-query-matchers"
 
 RSpec.describe JitPreloader::Preloader do
   let!(:contact1) do
@@ -476,6 +477,69 @@ RSpec.describe JitPreloader::Preloader do
           contact.addresses_count
 
           expect { contact.reload }.to change{ contact.jit_preload_aggregates }.to({})
+        end
+      end
+    end
+
+    context "with dive limit set" do
+      let!(:contact_book_1) { ContactBook.create(name: "The Yellow Pages") }
+      let!(:contact_book_2) { ContactBook.create(name: "The Yellow Pages") }
+      let!(:contact_book_3) { ContactBook.create(name: "The Yellow Pages") }
+      let!(:company1) { Company.create(name: "Company1", contact_book: contact_book_1) }
+      let!(:company2) { Company.create(name: "Company2", contact_book: contact_book_1) }
+      let!(:company3) { Company.create(name: "Company2", contact_book: contact_book_2) }
+      let!(:company4) { Company.create(name: "Company4", contact_book: contact_book_3) }
+      let!(:company5) { Company.create(name: "Company5", contact_book: contact_book_3) }
+
+      context "from the global value" do
+        before do
+          JitPreloader.max_ids_per_query = 2
+        end
+
+        after do
+          JitPreloader.max_ids_per_query = nil
+        end
+
+        it "can handle queries" do
+          contact_books = ContactBook.jit_preload.to_a
+
+          expect(contact_books.first.companies_count).to eq 2
+          expect(contact_books.second.companies_count).to eq 1
+          expect(contact_books.last.companies_count).to eq 2
+        end
+
+        it "makes the right number of queries based on dive limit" do
+          contact_books = ContactBook.jit_preload.to_a
+          expect do
+            contact_books.first.companies_count
+          end.to make_database_queries(count: 2)
+
+          expect do
+            contact_books.second.companies_count
+            contact_books.last.companies_count
+          end.to_not make_database_queries
+        end
+      end
+
+      context "from aggregate argument" do
+        it "can handle queries" do
+          contact_books = ContactBook.jit_preload.to_a
+
+          expect(contact_books.first.companies_count_with_max_ids_set).to eq 2
+          expect(contact_books.second.companies_count_with_max_ids_set).to eq 1
+          expect(contact_books.last.companies_count_with_max_ids_set).to eq 2
+        end
+
+        it "makes the right number of queries based on dive limit" do
+          contact_books = ContactBook.jit_preload.to_a
+          expect do
+            contact_books.first.companies_count_with_max_ids_set
+          end.to make_database_queries(count: 2)
+
+          expect do
+            contact_books.second.companies_count_with_max_ids_set
+            contact_books.last.companies_count_with_max_ids_set
+          end.to_not make_database_queries
         end
       end
     end
