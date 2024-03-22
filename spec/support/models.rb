@@ -10,6 +10,7 @@ class ContactBook < ActiveRecord::Base
   has_many :children, through: :parents
 
   has_many_aggregate :companies, :count, :count, "*"
+  has_many_aggregate :companies, :count_with_max_ids_set, :count, "*", max_ids_per_query: 2
   has_many_aggregate :employees, :count, :count, "*"
   has_many_aggregate :company_employees, :count, :count, "*"
   has_many_aggregate :children, :count, :count, "*"

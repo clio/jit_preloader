@@ -26,6 +26,16 @@ module JitPreloader
     @enabled = value
   end
 
+  def self.max_ids_per_query=(max_ids)
+    if max_ids && max_ids >= 1
+      @max_ids_per_query = max_ids
+    end
+  end
+
+  def self.max_ids_per_query
+    @max_ids_per_query
+  end
+
   def self.globally_enabled?
     if @enabled && @enabled.respond_to?(:call)
       @enabled.call
