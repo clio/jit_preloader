@@ -173,6 +173,20 @@ end
 
 ```
 
+Furthermore, there is an argument `max_ids_per_query` setting max ids per query. This helps prevent running a single query with too large list of ids which may be less efficient than splitting into multiple queries.
+```ruby
+class Contact < ActiveRecord::Base
+  has_many :addresses
+  has_many_aggregate :addresses, :count_all, :count, "*", max_ids_per_query: 10
+end
+
+Contact.jit_preload.each do |contact|
+  contact.addresses_count_all
+end
+# SELECT contact_id, COUNT(*) FROM addresses WHERE contact_id IN (1, 2, 3, ... ,10) GROUP BY contact_id
+# SELECT contact_id, COUNT(*) FROM addresses WHERE contact_id IN (11, 12, 13) GROUP BY contact_id
+```
+
 ### Preloading a subset of an association
 
 There are often times when you want to preload a subset of an association, or change how the SQL statement is generated. For example, if a `Contact` model has
@@ -213,6 +227,7 @@ end
 ### Jit preloading globally across your application
 
 The JitPreloader can be globally enabled, in which case most N+1 queries in your app should just disappear. It is off by default.
+The `max_ids_per_query` argument on loading aggregate methods can also apply on a global level.
 
 ```ruby
 # Can be true or false
@@ -223,12 +238,24 @@ JitPreloader.globally_enabled = true
 # so that you can turn it on or off dynamically.
 JitPreloader.globally_enabled = ->{ $redis.get('always_jit_preload') == 'on' }
 
+# Setting global max ids constraint on all aggregation methods.
+JitPreloader.max_ids_per_query = 10
+
+class Contact < ActiveRecord::Base
+  has_many :emails
+  has_many_aggregate :emails, :count_all, :count, "*"
+end
+
 # When enabled globally, this would not generate an N+1 query.
 Contact.all.each do |contact|
   contact.emails.each do |email|
     # do something
   end
+  # When max_ides_per_query is set globally, the aggregate method will split query base on the limit.
+  contact.emails_count_all
 end
+
+
 ```
 
 ## What it doesn't solve

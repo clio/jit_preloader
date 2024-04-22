@@ -18,7 +18,7 @@ module JitPreloadExtension
     end
   end
 
-  if Gem::Version.new(ActiveRecord::VERSION::STRING) >= Gem::Version.new("6.0.0")
+  if Gem::Version.new(ActiveRecord::VERSION::STRING) >= Gem::Version.new("7.0.0")
     def preload_scoped_relation(name:, base_association:, preload_scope: nil)
       return jit_preload_scoped_relations[name] if jit_preload_scoped_relations&.key?(name)
 
