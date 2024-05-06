@@ -165,6 +165,37 @@ RSpec.describe JitPreloader::Preloader do
           expect(Contact.jit_preload.map(&:contact_owner)).to eq [nil, ContactOwner.first, Address.first]
         end
       end
+
+      context "when a record has a polymorphic association type is nil" do
+        before do
+          contact1.update!(contact_owner_type: nil, contact_owner_id: nil)
+        end
+
+        it "successfully load the rest of association values" do
+          contacts = Contact.jit_preload.to_a
+          expect(contacts.first.contact_owner).to eq(nil)
+
+          expect do
+            contacts.first.contact_owner
+            contacts.second.contact_owner
+            contacts.third.contact_owner
+          end.not_to make_database_queries
+
+          expect(contacts.second.contact_owner).to eq(ContactOwner.first)
+          expect(contacts.third.contact_owner).to eq(Address.first)
+        end
+
+        it "publish N+1 notification due to polymorphic nil type" do
+          contacts = Contact.jit_preload.to_a
+
+          ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
+            contacts.first.contact_owner
+          end
+
+          expect_source_map = { contacts.first => [:contact_owner] }
+          expect(source_map).to eql(expect_source_map)
+        end
+      end
     end
   end
 
