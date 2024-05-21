@@ -156,6 +156,73 @@ module JitPreloadExtension
           jit_preload_aggregates[key]
         end
       end
+
+      def has_many_aggregate_exists(assoc, table_alias_name: nil, max_ids_per_query: nil)
+        method_name = "#{assoc}_exists?"
+
+        define_method(method_name) do |conditions={}|
+          self.jit_preload_aggregates ||= {}
+
+          key = "#{method_name}|#{conditions.sort.hash}"
+          return jit_preload_aggregates[key] if jit_preload_aggregates.key?(key)
+          if jit_preloader
+            reflection = association(assoc).reflection
+            primary_ids = jit_preloader.records.collect{|r| r[reflection.active_record_primary_key] }
+            max_ids_per_query = max_ids_per_query || JitPreloader.max_ids_per_query
+            if max_ids_per_query
+              slices = primary_ids.each_slice(max_ids_per_query)
+            else
+              slices = [primary_ids]
+            end
+
+            klass = reflection.klass
+
+            aggregate_association = reflection
+            while aggregate_association.through_reflection
+              aggregate_association = aggregate_association.through_reflection
+            end
+
+            association_scope = klass.all.merge(association(assoc).scope).unscope(where: aggregate_association.foreign_key)
+            association_scope = association_scope.instance_exec(&reflection.scope).reorder(nil) if reflection.scope
+
+            # If the query uses an alias for the association, use that instead of the table name
+            table_reference = table_alias_name
+            table_reference ||= association_scope.references_values.first || aggregate_association.table_name
+
+            # If the association is a STI child model, specify its type in the condition so that it
+            # doesn't include results from other child models
+            parent_is_base_class = aggregate_association.klass.superclass.abstract_class? || aggregate_association.klass.superclass == ActiveRecord::Base
+            has_type_column = aggregate_association.klass.column_names.include?(aggregate_association.klass.inheritance_column)
+            is_child_sti_model = !parent_is_base_class && has_type_column
+            if is_child_sti_model
+              conditions[table_reference] = { aggregate_association.klass.inheritance_column => aggregate_association.klass.sti_name }
+            end
+
+            if reflection.type.present?
+              conditions[reflection.type] = self.class.name
+            end
+
+            preloaded_data = Set.new
+            slices.each do |slice|
+              data = association_scope
+                      .where(conditions.deep_merge(table_reference => { aggregate_association.foreign_key => slice }))
+                      .select(aggregate_association.foreign_key.to_sym)
+                      .distinct
+                      .pluck(aggregate_association.foreign_key.to_sym)
+                      .to_set
+              preloaded_data.merge(data)
+            end
+
+            jit_preloader.records.each do |record|
+              record.jit_preload_aggregates ||= {}
+              record.jit_preload_aggregates[key] = preloaded_data.include?(record.id)
+            end
+          else
+            self.jit_preload_aggregates[key] = send(assoc).where(conditions).send(:exists?)
+          end
+          jit_preload_aggregates[key]
+        end
+      end
     end
   end
 end
