@@ -11,10 +11,8 @@ require 'jit_preloader/active_record/associations/singular_association'
 if Gem::Version.new(ActiveRecord::VERSION::STRING) >= Gem::Version.new("7.0.0")
   require 'jit_preloader/active_record/associations/preloader/ar7_association'
   require 'jit_preloader/active_record/associations/preloader/ar7_branch'
-elsif Gem::Version.new(ActiveRecord::VERSION::STRING) >= Gem::Version.new("6.0.0")
+elsif Gem::Version.new(ActiveRecord::VERSION::STRING) >= Gem::Version.new("6.1.0")
   require 'jit_preloader/active_record/associations/preloader/ar6_association'
-elsif Gem::Version.new(ActiveRecord::VERSION::STRING) >= Gem::Version.new("5.2.2")
-  require 'jit_preloader/active_record/associations/preloader/ar5_association'
 else
   require 'jit_preloader/active_record/associations/preloader/collection_association'
   require 'jit_preloader/active_record/associations/preloader/singular_association'
@@ -22,7 +20,6 @@ end
 require 'jit_preloader/preloader'
 
 module JitPreloader
-  Warning[:deprecated] = true
   def self.globally_enabled=(value)
     @enabled = value
   end
