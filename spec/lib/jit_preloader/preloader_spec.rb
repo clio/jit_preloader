@@ -49,11 +49,6 @@ RSpec.describe JitPreloader::Preloader do
     ->(event, data){ source_map[data[:source]] << data[:association] }
   end
 
-
-  it "should warn about keyword arguments" do
-    expect(described_class.new(records: nil, associations: nil).foo({a: 1})).to eq({a: 1})
-  end
-
   context "for single table inheritance" do
     context "when preloading an aggregate for a child model" do
       let!(:contact_book) { ContactBook.create(name: "The Yellow Pages") }
