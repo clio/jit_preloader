@@ -171,7 +171,7 @@ RSpec.describe JitPreloader::Preloader do
           contact1.update!(contact_owner_type: nil, contact_owner_id: nil)
         end
 
-        it "successfully load the rest of association values" do
+        it "successfully load the rest of association values and does not publish a n+1 notification" do
           contacts = Contact.jit_preload.to_a
           ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
             expect(contacts.first.contact_owner).to eq(nil)
