@@ -18,12 +18,16 @@ module JitPreloader
           # always an N+1 query.
           record.jit_n_plus_one_tracking ||= owner.jit_n_plus_one_tracking if record
 
-          if !jit_loaded && owner.jit_n_plus_one_tracking
+          if !jit_loaded && owner.jit_n_plus_one_tracking && !is_polymorphic_association_without_type
             ActiveSupport::Notifications.publish("n_plus_one_query",
                                                  source: owner, association: reflection.name)
           end
         end
       end
+    end
+    
+    private def is_polymorphic_association_without_type
+      self.is_a?(ActiveRecord::Associations::BelongsToPolymorphicAssociation) && self.klass.nil?
     end
   end
 end

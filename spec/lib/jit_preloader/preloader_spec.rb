@@ -171,9 +171,13 @@ RSpec.describe JitPreloader::Preloader do
           contact1.update!(contact_owner_type: nil, contact_owner_id: nil)
         end
 
-        it "successfully load the rest of association values" do
+        it "successfully load the rest of association values and does not publish a n+1 notification" do
           contacts = Contact.jit_preload.to_a
-          expect(contacts.first.contact_owner).to eq(nil)
+          ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
+            expect(contacts.first.contact_owner).to eq(nil)
+          end
+
+          expect(source_map).to eql({})
 
           expect do
             contacts.first.contact_owner
@@ -183,17 +187,6 @@ RSpec.describe JitPreloader::Preloader do
 
           expect(contacts.second.contact_owner).to eq(ContactOwner.first)
           expect(contacts.third.contact_owner).to eq(Address.first)
-        end
-
-        it "publish N+1 notification due to polymorphic nil type" do
-          contacts = Contact.jit_preload.to_a
-
-          ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
-            contacts.first.contact_owner
-          end
-
-          expect_source_map = { contacts.first => [:contact_owner] }
-          expect(source_map).to eql(expect_source_map)
         end
       end
     end
