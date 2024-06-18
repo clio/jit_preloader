@@ -20,6 +20,7 @@ end
 require 'jit_preloader/preloader'
 
 module JitPreloader
+  Warning[:deprecated] = true
   def self.globally_enabled=(value)
     @enabled = value
   end
