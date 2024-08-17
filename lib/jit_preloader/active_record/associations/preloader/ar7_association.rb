@@ -1,6 +1,7 @@
+# frozen_string_literal: true
+
 module JitPreloader
   module PreloaderAssociation
-
     # A monkey patch to ActiveRecord. The old method looked like the snippet
     # below. Our changes here are that we remove records that are already
     # part of the target, then attach all of the records to a new jit preloader.

@@ -1,6 +1,8 @@
+# frozen_string_literal: true
+
 module JitPreloader
   module PreloaderBranch
-    """
+    ''"
     ActiveRecord version >= 7.x.x introduced an improvement for preloading associations in batches:
     https://github.com/rails/rails/blob/main/activerecord/lib/active_record/associations/preloader.rb#L121
 
@@ -9,7 +11,7 @@ module JitPreloader
     But this change breaks that behaviour because now Batch is calling `klass.base_class` (a method defined by ActiveRecord::Base)
     before we have a chance to filter out the non-AR classes.
     This patch for AR 7.x makes the Branch class ignore any association loaders that aren't for ActiveRecord::Base subclasses.
-    """
+    "''
 
     def loaders
       @loaders = super.find_all do |loader|

@@ -1,9 +1,10 @@
+# frozen_string_literal: true
+
 module JitPreloader
   class Preloader < ActiveRecord::Associations::Preloader
-
     attr_accessor :records
 
-    if Gem::Version.new(ActiveRecord::VERSION::STRING) >= Gem::Version.new("7.0.0")
+    if Gem::Version.new(ActiveRecord::VERSION::STRING) >= Gem::Version.new('7.0.0')
       def self.attach(records)
         new(records: records.dup, associations: nil).tap do |loader|
           records.each do |record|
@@ -15,12 +16,12 @@ module JitPreloader
       def jit_preload(associations)
         # It is possible that the records array has multiple different classes (think single table inheritance).
         # Thus, it is possible that some of the records don't have an association.
-        records_with_association = records.reject{|r| r.class.reflect_on_association(associations).nil? }
+        records_with_association = records.reject { |r| r.class.reflect_on_association(associations).nil? }
 
         # Some of the records may already have the association loaded and we should not load them again
-        records_requiring_loading = records_with_association.select{|r| !r.association(associations).loaded? }
+        records_requiring_loading = records_with_association.select { |r| !r.association(associations).loaded? }
 
-        self.class.new(records: records_requiring_loading, associations: associations).call
+        self.class.new(records: records_requiring_loading, associations:).call
       end
     else
       def self.attach(records)
@@ -35,10 +36,10 @@ module JitPreloader
       def jit_preload(associations)
         # It is possible that the records array has multiple different classes (think single table inheritance).
         # Thus, it is possible that some of the records don't have an association.
-        records_with_association = records.reject{ |record| record.class.reflect_on_association(associations).nil? }
+        records_with_association = records.reject { |record| record.class.reflect_on_association(associations).nil? }
 
         # Some of the records may already have the association loaded and we should not load them again
-        records_requiring_loading = records_with_association.select{ |record| !record.association(associations).loaded? }
+        records_with_association.select { |record| !record.association(associations).loaded? }
         preload records_with_association, associations
       end
     end
@@ -51,12 +52,11 @@ module JitPreloader
     # each object would dump N+1 objects which means you'll end up storing O(N^2) memory. Thats no good.
     # So instead, we will just nullify the jit_preloader on load
     def _dump(level)
-      ""
+      ''
     end
 
     def self._load(args)
       nil
     end
-
   end
 end

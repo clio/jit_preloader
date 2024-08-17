@@ -90,16 +90,16 @@ This gem will publish an `n_plus_one_query` event via ActiveSupport::Notificatio
 
 You could implement some basic tracking. This will let you measure the extent of the N+1 query problems in your app:
 ```ruby
-ActiveSupport::Notifications.subscribe("n_plus_one_query") do |event, data|
+ActiveSupport::Notifications.subscribe('n_plus_one_query') do |event, data|
   statsd.increment "web.#{Rails.env}.n_plus_one_queries.global"
 end
 ```
 
 You could log the N+1 queries. In your development environment, you could throw N+1 queries into the logs along with a stack trace:
 ```ruby
-ActiveSupport::Notifications.subscribe("n_plus_one_query") do |event, data|
+ActiveSupport::Notifications.subscribe('n_plus_one_query') do |event, data|
   message = "N+1 Query detected: #{data[:association]} on #{data[:source].class}"
-  backtrace = caller.select{|r| r.starts_with?(Rails.root.to_s) }
+  backtrace = caller.select { |r| r.starts_with?(Rails.root.to_s) }
   Rails.logger.debug("\n\n#{message}\n#{backtrace.join("\n")}\n".red)
 end
 ```
@@ -113,7 +113,7 @@ config.around(:each) do |example|
       raise QueryError.new(message)
     end
   end
-  ActiveSupport::Notifications.subscribed(callback, "n_plus_one_query") do
+  ActiveSupport::Notifications.subscribed(callback, 'n_plus_one_query') do
     example.run
   end
 end
@@ -144,7 +144,7 @@ There is now a `has_many_aggregate` method available for ActiveRecord::Base. Thi
 ```ruby
 # old
 Contact.all.each do |contact|
-  contact.addresses.maximum("LENGTH(street)")
+  contact.addresses.maximum('LENGTH(street)')
   contact.addresses.count
 end
 # SELECT * FROM contacts
@@ -159,8 +159,8 @@ end
 #new
 class Contact < ActiveRecord::Base
   has_many :addresses
-  has_many_aggregate :addresses, :max_street_length, :maximum, "LENGTH(street)", default: nil
-  has_many_aggregate :addresses, :count_all, :count, "*"
+  has_many_aggregate :addresses, :max_street_length, :maximum, 'LENGTH(street)', default: nil
+  has_many_aggregate :addresses, :count_all, :count, '*'
 end
 
 Contact.jit_preload.each do |contact|
@@ -177,7 +177,7 @@ Furthermore, there is an argument `max_ids_per_query` setting max ids per query.
 ```ruby
 class Contact < ActiveRecord::Base
   has_many :addresses
-  has_many_aggregate :addresses, :count_all, :count, "*", max_ids_per_query: 10
+  has_many_aggregate :addresses, :count_all, :count, '*', max_ids_per_query: 10
 end
 
 Contact.jit_preload.each do |contact|
@@ -197,7 +197,7 @@ This is a method `preload_scoped_relation` that is available that can handle thi
 #old
 class Contact < ActiveRecord::Base
   has_many :addresses
-  has_many :usa_addresses, ->{ where(country: Country.find_by_name("USA")) }
+  has_many :usa_addresses, -> { where(country: Country.find_by_name('USA')) }
 end
 
 Contact.jit_preload.all.each do |contact|
@@ -205,18 +205,18 @@ Contact.jit_preload.all.each do |contact|
   contact.usa_addresses
 
   # This will preload as the entire addresses association, and filters it in memory
-  contact.addresses.select{|address| address.country == Country.find_by_name("USA") }
+  contact.addresses.select { |address| address.country == Country.find_by_name('USA') }
 
   # This is an N+1 query
-  contact.addresses.where(country: Country.find_by_name("USA"))
+  contact.addresses.where(country: Country.find_by_name('USA'))
 end
 
 # New
 Contact.jit_preload.all.each do |contact|
   contact.preload_scoped_relation(
-    name: "USA Addresses",
+    name: 'USA Addresses',
     base_association: :addresses,
-    preload_scope: Address.where(country: Country.find_by_name("USA"))
+    preload_scope: Address.where(country: Country.find_by_name('USA'))
   )
 end
 # SELECT * FROM contacts
@@ -236,14 +236,14 @@ JitPreloader.globally_enabled = true
 # Can also be given anything that responds to `call`.
 # You could build a kill switch with Redis (or whatever you'd like)
 # so that you can turn it on or off dynamically.
-JitPreloader.globally_enabled = ->{ $redis.get('always_jit_preload') == 'on' }
+JitPreloader.globally_enabled = -> { $redis.get('always_jit_preload') == 'on' }
 
 # Setting global max ids constraint on all aggregation methods.
 JitPreloader.max_ids_per_query = 10
 
 class Contact < ActiveRecord::Base
   has_many :emails
-  has_many_aggregate :emails, :count_all, :count, "*"
+  has_many_aggregate :emails, :count_all, :count, '*'
 end
 
 # When enabled globally, this would not generate an N+1 query.

@@ -1,6 +1,7 @@
+# frozen_string_literal: true
+
 module JitPreloader
   module ActiveRecordAssociationsCollectionAssociation
-
     def load_target
       was_loaded = loaded?
 
@@ -17,10 +18,10 @@ module JitPreloader
           JitPreloader::Preloader.attach(records) if records.any? && !jit_loaded && JitPreloader.globally_enabled?
 
           # If the records were not pre_loaded
-          records.each{ |record| record.jit_n_plus_one_tracking = true }
+          records.each { |record| record.jit_n_plus_one_tracking = true }
 
           if !jit_loaded && owner.jit_n_plus_one_tracking
-            ActiveSupport::Notifications.publish("n_plus_one_query",
+            ActiveSupport::Notifications.publish('n_plus_one_query',
                                                  source: owner, association: reflection.name)
           end
         end
