@@ -22,6 +22,7 @@ module JitPreloadExtension
     def preload_scoped_relation(name:, base_association:, preload_scope: nil)
       return jit_preload_scoped_relations[name] if jit_preload_scoped_relations&.key?(name)
 
+      base_association = base_association.to_sym
       records = jit_preloader&.records || [self]
       previous_association_values = {}
 
@@ -55,6 +56,7 @@ module JitPreloadExtension
     def preload_scoped_relation(name:, base_association:, preload_scope: nil)
       return jit_preload_scoped_relations[name] if jit_preload_scoped_relations&.key?(name)
 
+      base_association = base_association.to_sym
       records = jit_preloader&.records || [self]
       previous_association_values = {}
 

@@ -106,5 +106,27 @@ RSpec.describe "ActiveRecord::Base Extensions" do
         expect(value).to eq([])
       end
     end
+
+    context "when preload_scoped_relation with string base_association name" do
+      it "preload properly" do
+        contacts = Contact.jit_preload.limit(2).to_a
+
+        call_with_string = lambda { |contact| contact.preload_scoped_relation(
+          name: "American Addresses",
+          base_association: "addresses",
+          preload_scope: Address.where(country: usa)
+        ) }
+
+        usa_addresses = contacts.first.addresses.where(country: usa).to_a
+        expect do
+          expect(call_with_string.call(contacts.first)).to match_array usa_addresses
+        end.to make_database_queries(count: 1)
+
+        usa_addresses = contacts.last.addresses.where(country: usa).to_a
+        expect do
+          expect(call_with_string.call(contacts.last)).to match_array usa_addresses
+        end.to_not make_database_queries
+      end
+    end
   end
 end
