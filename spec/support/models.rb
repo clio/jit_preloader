@@ -74,9 +74,15 @@ class Country < ActiveRecord::Base
   has_many :addresses
   has_many :contacts, through: :addresses
   has_many :contact_owners, through: :contacts, source_type: 'ContactOwner'
+  has_many :states, primary_key: 'name', foreign_key: "region"
 
   has_many_aggregate :contacts, :count, :count, "*"
   has_many_aggregate :contact_owners, :count, :count, "*"
+  has_many_aggregate :states, :count, :count, "*"
+end
+
+class State < ActiveRecord::Base
+  belongs_to :country, foreign_key: 'region'
 end
 
 class ContactOwner < ActiveRecord::Base
