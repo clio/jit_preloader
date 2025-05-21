@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module JitPreloadExtension
   attr_accessor :jit_preloader
   attr_accessor :jit_n_plus_one_tracking
@@ -18,12 +20,12 @@ module JitPreloadExtension
     end
   end
 
-  if Gem::Version.new(ActiveRecord::VERSION::STRING) >= Gem::Version.new("7.0.0")
+  if Gem::Version.new(ActiveRecord::VERSION::STRING) >= Gem::Version.new('7.0.0')
     def preload_scoped_relation(name:, base_association:, preload_scope: nil)
       return jit_preload_scoped_relations[name] if jit_preload_scoped_relations&.key?(name)
 
       base_association = base_association.to_sym
-      records = jit_preloader&.records || [self]
+      records = jit_preloader&.records || [ self ]
       previous_association_values = {}
 
       records.each do |record|
@@ -35,7 +37,7 @@ module JitPreloadExtension
       end
 
       preloader_association = ActiveRecord::Associations::Preloader.new(
-        records: records,
+        records:,
         associations: base_association,
         scope: preload_scope
       ).call.first
@@ -57,7 +59,7 @@ module JitPreloadExtension
       return jit_preload_scoped_relations[name] if jit_preload_scoped_relations&.key?(name)
 
       base_association = base_association.to_sym
-      records = jit_preloader&.records || [self]
+      records = jit_preloader&.records || [ self ]
       previous_association_values = {}
 
       records.each do |record|
@@ -95,19 +97,19 @@ module JitPreloadExtension
       def has_many_aggregate(assoc, name, aggregate, field, table_alias_name: nil, default: 0, max_ids_per_query: nil)
         method_name = "#{assoc}_#{name}"
 
-        define_method(method_name) do |conditions={}|
+        define_method(method_name) do |conditions = {}|
           self.jit_preload_aggregates ||= {}
 
           key = "#{method_name}|#{conditions.sort.hash}"
           return jit_preload_aggregates[key] if jit_preload_aggregates.key?(key)
           if jit_preloader
             reflection = association(assoc).reflection
-            primary_ids = jit_preloader.records.collect{|r| r[reflection.active_record_primary_key] }
+            primary_ids = jit_preloader.records.collect { |r| r[reflection.active_record_primary_key] }
             max_ids_per_query = max_ids_per_query || JitPreloader.max_ids_per_query
             if max_ids_per_query
               slices = primary_ids.each_slice(max_ids_per_query)
             else
-              slices = [primary_ids]
+              slices = [ primary_ids ]
             end
 
             klass = reflection.klass

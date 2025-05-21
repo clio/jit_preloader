@@ -1,0 +1,49 @@
+# Omakase Ruby styling for Rails
+inherit_gem: { rubocop-rails-omakase: rubocop.yml }
+
+AllCops:
+  TargetRubyVersion: 3.1
+
+Layout/AssignmentIndentation:
+  Enabled: true
+
+Layout/DefEndAlignment:
+  Enabled: true
+  EnforcedStyleAlignWith: def
+  AutoCorrect: true
+
+Layout/EmptyLineBetweenDefs:
+  Enabled: true
+  NumberOfEmptyLines: 1
+
+Layout/FirstArrayElementIndentation:
+  Enabled: true
+  EnforcedStyle: consistent
+
+Layout/HeredocIndentation:
+  Enabled: true
+
+Layout/IndentationConsistency:
+  Enabled: true
+  EnforcedStyle: normal
+
+Layout/IndentationStyle:
+  Enabled: true
+
+Layout/IndentationWidth:
+  Enabled: true
+  Width: 2
+
+Style/ClassAndModuleChildren:
+  Enabled: true
+  EnforcedStyle: nested
+
+Lint/Debugger:
+  Enabled: true
+
+Style/FrozenStringLiteralComment:
+  Enabled: true
+
+Style/StringLiterals:
+  Enabled: true
+  EnforcedStyle: single_quotes

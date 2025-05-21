@@ -1,17 +1,19 @@
+# frozen_string_literal: true
+
 require 'active_support/concern'
 require 'active_support/core_ext/module/delegation'
 require 'active_support/notifications'
 require 'active_record'
 
-require "jit_preloader/version"
+require 'jit_preloader/version'
 require 'jit_preloader/active_record/base'
 require 'jit_preloader/active_record/relation'
 require 'jit_preloader/active_record/associations/collection_association'
 require 'jit_preloader/active_record/associations/singular_association'
-if Gem::Version.new(ActiveRecord::VERSION::STRING) >= Gem::Version.new("7.0.0")
+if Gem::Version.new(ActiveRecord::VERSION::STRING) >= Gem::Version.new('7.0.0')
   require 'jit_preloader/active_record/associations/preloader/ar7_association'
   require 'jit_preloader/active_record/associations/preloader/ar7_branch'
-elsif Gem::Version.new(ActiveRecord::VERSION::STRING) >= Gem::Version.new("6.1.0")
+elsif Gem::Version.new(ActiveRecord::VERSION::STRING) >= Gem::Version.new('6.1.0')
   require 'jit_preloader/active_record/associations/preloader/ar6_association'
 else
   require 'jit_preloader/active_record/associations/preloader/collection_association'
@@ -41,5 +43,4 @@ module JitPreloader
       @enabled
     end
   end
-
 end

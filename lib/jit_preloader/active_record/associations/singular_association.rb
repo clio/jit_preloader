@@ -1,6 +1,7 @@
+# frozen_string_literal: true
+
 module JitPreloader
   module ActiveRecordAssociationsSingularAssociation
-
     def load_target
       was_loaded = loaded?
 
@@ -19,16 +20,16 @@ module JitPreloader
           record.jit_n_plus_one_tracking ||= owner.jit_n_plus_one_tracking if record
 
           if !jit_loaded && owner.jit_n_plus_one_tracking && !is_polymorphic_association_without_type
-            ActiveSupport::Notifications.publish("n_plus_one_query",
+            ActiveSupport::Notifications.publish('n_plus_one_query',
                                                  source: owner, association: reflection.name)
           end
         end
       end
     end
-    
+
     private def is_polymorphic_association_without_type
-      self.is_a?(ActiveRecord::Associations::BelongsToPolymorphicAssociation) && self.klass.nil?
-    end
+              self.is_a?(ActiveRecord::Associations::BelongsToPolymorphicAssociation) && self.klass.nil?
+            end
   end
 end
 
