@@ -72,7 +72,7 @@ Add this line to your application's Gemfile:
 gem 'jit_preloader'
 ```
 
-This gem requires Rails 7.1 or higher.
+As of v8.0 of this gem, it requires Rails 7.1 or higher.  If you need to use it with an older version of Rails use v3.1.0.
 
 And then execute:
 
