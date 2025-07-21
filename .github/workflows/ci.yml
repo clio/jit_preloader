@@ -15,7 +15,7 @@ jobs:
       matrix:
         gemfile:
           - Gemfile
-          - Gemfile.6.1
+          - Gemfile.7.1
     env:
       BUNDLE_GEMFILE: ${{ matrix.gemfile }}
     steps:
@@ -23,7 +23,7 @@ jobs:
       - name: Set up Ruby ${{ matrix.ruby-version }}
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: 3.1
+          ruby-version: 3.4.1
       - name: Install dependencies
         run: bundle install
       - name: Run tests
