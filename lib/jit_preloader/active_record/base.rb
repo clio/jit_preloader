@@ -148,9 +148,10 @@ module JitPreloadExtension
               preloaded_data.merge!(data)
             end
 
+            aggregate_association_primary_key = aggregate_association.active_record_primary_key
             jit_preloader.records.each do |record|
               record.jit_preload_aggregates ||= {}
-              record.jit_preload_aggregates[key] = preloaded_data[record.id] || default
+              record.jit_preload_aggregates[key] = preloaded_data.fetch(record[aggregate_association_primary_key], default)
             end
           else
             self.jit_preload_aggregates[key] = send(assoc).where(conditions).send(aggregate, field) || default

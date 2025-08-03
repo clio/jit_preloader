@@ -313,6 +313,16 @@ RSpec.describe JitPreloader::Preloader do
     end
   end
 
+  context "when preloading an aggregate where the association uses a custom primary key instad of 'id'" do 
+    let!(:new_jersey) { State.create(name: "New Jersey", region: usa.name) }
+    let!(:new_york) { State.create(name: "New York", region: usa.name) }
+    
+    it "uses the custom primary key to join the data" do 
+      countries = Country.where(id: usa.id).jit_preload.to_a
+      expect(countries.first.states_count).to eq 2
+    end
+  end
+
   context "when a singular association id changes after preload" do
     let!(:contact_book1) { ContactBook.create(name: "The Yellow Pages") }
     let!(:contact_book2) { ContactBook.create(name: "The White Pages") }

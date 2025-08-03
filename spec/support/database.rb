@@ -9,6 +9,7 @@ class Database
       "CREATE TABLE phone_numbers (id INTEGER NOT NULL PRIMARY KEY, contact_id INTEGER NOT NULL, phone VARCHAR(10))",
       "CREATE TABLE countries (id INTEGER NOT NULL PRIMARY KEY, name VARCHAR(255))",
       "CREATE TABLE parents_children (id INTEGER NOT NULL PRIMARY KEY, parent_id INTEGER, child_id INTEGER)",
+      "CREATE TABLE states (id INTEGER NOT NULL PRIMARY KEY, name VARCHAR(255), region VARCHAR(255))",
     ]
   end
 
