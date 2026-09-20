@@ -16,7 +16,7 @@ module JitPreloader
           # If we went through a JIT preload, then we will have attached another JitPreloader elsewhere.
           JitPreloader::Preloader.attach(records) if records.any? && !jit_loaded && JitPreloader.globally_enabled?
 
-          # If the records were not pre_loaded
+          # If the records were not preloaded
           records.each{ |record| record.jit_n_plus_one_tracking = true }
 
           if !jit_loaded && owner.jit_n_plus_one_tracking
